@@ -189,15 +189,20 @@ def colunas_de_notas() -> list["ui.Celula"]:
         # continua no painel da direita, completa, ao escolher a nota. Trocar
         # uma razão social cortada por uma descrição a um clique é o negócio
         # que fecha.
-        ui.Celula("prestador", "Prestador", 252, tipo="duplo", peso=3, minimo=150),
-        ui.Celula("tomador", "Tomador", 248, tipo="duplo", peso=3, minimo=150),
+        # `px`: as medidas abaixo foram tiradas de um monitor a 100%. Num a
+        # 150% a mesma razão social ocupa uma vez e meia isto — e apareceria
+        # cortada de novo, que é o defeito que a medida veio consertar.
+        ui.Celula("prestador", "Prestador", ui.px(252), tipo="duplo", peso=3,
+                  minimo=ui.px(150)),
+        ui.Celula("tomador", "Tomador", ui.px(248), tipo="duplo", peso=3,
+                  minimo=ui.px(150)),
         # Estas quatro não esticam, então a base é o que o conteúdo mais
         # largo pede, medido: R$ 40.416,25 dá 82px; a pílula "Emitida · nº
         # 1412" dá 117; "29/08/2026" dá 76, mais os 8 que o recorte reserva.
-        ui.Celula("valor", "Valor", 86, tipo="dinheiro", fim=True),
-        ui.Celula("status", "Situação", 120, tipo="pilula"),
-        ui.Celula("data", "Emissão", 86, tipo="duplo", fim=True),
-        ui.Celula("acoes", "", 52, tipo="acoes", fim=True, ordenavel=False),
+        ui.Celula("valor", "Valor", ui.px(86), tipo="dinheiro", fim=True),
+        ui.Celula("status", "Situação", ui.px(120), tipo="pilula"),
+        ui.Celula("data", "Emissão", ui.px(86), tipo="duplo", fim=True),
+        ui.Celula("acoes", "", ui.px(52), tipo="acoes", fim=True, ordenavel=False),
     ]
 
 
@@ -377,10 +382,20 @@ class NfseDesktop(tk.Tk):
         ui.escolher_familia(self)
 
         self.title(f"{marca.ASSINATURA} · NFS-e")
-        self.minsize(980, 600)
+        # Em pixels da tela: a 150% a mesma janela "mínima" cabe menos
+        # conteúdo, porque a letra ocupa uma vez e meia. O mínimo cresce junto.
+        self.minsize(ui.px(980), ui.px(600))
         # Pede a tela inteira: `centralizar` já corta pelo que couber na área
         # livre, então pedir grande é pedir "o máximo que couber".
         ui.centralizar(self, 1600, 1000)
+        # Agora que a janela existe, dá para perguntar em que monitor ela
+        # está: `ativar_nitidez` só sabia responder pelo monitor principal, e
+        # quem abre o programa no segundo monitor abriria na escala errada.
+        # Nenhum widget nasceu ainda, então trocar a escala aqui não custa
+        # remontagem nenhuma.
+        self._densidade = ui.densidade_da_janela(self)
+        if abs(self._densidade - escala) > 0.01:
+            ui.aplicar_escala(self, self._densidade)
         self.configure(bg=ui.BG)
         try:
             self._icone = marca.icone(56, self)
@@ -420,6 +435,7 @@ class NfseDesktop(tk.Tk):
         # acompanhe o programa, senão fica clara sobre uma janela escura.
         self.after(120, self._pintar_moldura)
         self.show_login()
+        self.bind("<Configure>", self._conferir_densidade, add="+")
         # Em segundo plano: a abertura não espera a internet. Se a rede estiver
         # fora, o motivo vai para o diário e a tela abre como sempre.
         updater.procurar_em_segundo_plano(
@@ -548,14 +564,30 @@ class NfseDesktop(tk.Tk):
         O programa já faz isso sozinho a cada login, mas quando a prefeitura
         publica versão nova no meio do expediente é bom poder forçar sem
         esperar o cache vencer.
+
+        A ida ao portal roda em thread. Antes ficava aqui mesmo, e enquanto a
+        prefeitura não respondesse a janela não repintava — o Windows chega a
+        escurecê-la e a chamar de "não está respondendo", que é o retrato de
+        um programa quebrado quando ele só está esperando.
         """
-        try:
-            antes = portal.em_uso()
-            agora = portal.sincronizar(forcar=True)
-        except Exception as exc:
-            registro.falha("reler versao do portal", exc)
-            messagebox.showerror("Não deu para ler", str(exc))
-            return
+        self._info("Consultando o portal", "Lendo em que versão o portal está…")
+
+        def trabalho() -> None:
+            try:
+                antes = portal.em_uso()
+                agora = portal.sincronizar(forcar=True)
+            except Exception as exc:
+                registro.falha("reler versao do portal", exc)
+                aviso = str(exc)
+                self._na_interface(
+                    lambda: messagebox.showerror("Não deu para ler", aviso))
+                return
+            self._na_interface(lambda: self._contar_do_portal(antes, agora))
+
+        threading.Thread(target=trabalho, daemon=True).start()
+
+    def _contar_do_portal(self, antes: str, agora: str) -> None:
+        """O resultado da releitura, já na thread da tela."""
         registro.escrever("versao do portal", f"{antes or '(nenhuma)'} -> {agora}")
         if not agora:
             self._alerta(
@@ -662,7 +694,7 @@ class NfseDesktop(tk.Tk):
         )
 
     @staticmethod
-    def duas_colunas(pai: tk.Widget, largura: int = 330) -> tuple[tk.Frame, tk.Frame]:
+    def duas_colunas(pai: tk.Widget, largura: int = 0) -> tuple[tk.Frame, tk.Frame]:
         """Lista à esquerda, detalhe à direita. Devolve as duas.
 
         Em `grid` e não em `pack`: empacotada com `fill="y"`, a coluna da
@@ -670,7 +702,7 @@ class NfseDesktop(tk.Tk):
         sem erro, sem aviso. Foi assim que dois cartões de Ajustes sumiram.
         """
         pai.columnconfigure(0, weight=1)
-        pai.columnconfigure(1, weight=0, minsize=largura)
+        pai.columnconfigure(1, weight=0, minsize=largura or ui.px(330))
         pai.rowconfigure(0, weight=1)
         esquerda = tk.Frame(pai, bg=ui.BG)
         esquerda.grid(row=0, column=0, sticky="nsew")
@@ -759,6 +791,28 @@ class NfseDesktop(tk.Tk):
         self._redesenhar()
         self._pintar_moldura()
 
+    def _conferir_densidade(self, evento=None) -> None:
+        """Mudou de monitor? Então mudou a densidade — e a escala tem de mudar.
+
+        `<Configure>` também sobe dos filhos e dispara a cada pixel de
+        arrasto; por isso o evento é filtrado pela janela e a conta só é feita
+        quando a densidade realmente mudou. Perguntar custa microssegundos;
+        remontar a tela, não.
+        """
+        if evento is not None and evento.widget is not self:
+            return
+        agora = ui.densidade_da_janela(self)
+        if abs(agora - getattr(self, "_densidade", 1.0)) < 0.01:
+            return
+        self._densidade = agora
+        ui.aplicar_escala(self, agora)
+        ui.aplicar_estilo(self)
+        if self._nav_atual == "emitir":
+            # Remontar seria recomeçar a nota. Quem arrastou a janela não
+            # pediu isso. A escala nova vale da próxima tela em diante.
+            return
+        self._redesenhar()
+
     def _redesenhar(self) -> None:
         """Repinta a moldura e remonta a tela atual com a paleta em vigor."""
         self.configure(bg=ui.BG)
@@ -776,10 +830,13 @@ class NfseDesktop(tk.Tk):
         self._montar_comando()
         # Os avisos abertos foram desenhados com a paleta antiga.
         self.avisos.limpar()
+        # "ajustes" — é a chave que `show_settings` grava. Enquanto isto dizia
+        # "config", trocar o tema estando em Ajustes caía no padrão do `.get`
+        # e devolvia a pessoa para a tela de login, com a sessão de pé.
         telas = {
             "emitir": self.show_new_note,
             "notas": self.show_documents,
-            "config": self.show_settings,
+            "ajustes": self.show_settings,
         }
         telas.get(self._nav_atual, self.show_login)()
 
@@ -866,7 +923,7 @@ class NfseDesktop(tk.Tk):
         caixa = ui.cartao(centro, padx=ui.E6, pady=ui.E6)
         caixa.pack()
         form = caixa.interior
-        form.columnconfigure(0, minsize=380)
+        form.columnconfigure(0, minsize=ui.px(380))
 
         ui.etiqueta_campo(form, "Usuário (inscrição municipal)").grid(row=0, column=0, sticky="w")
         usuario = ttk.Entry(form, font=(ui.FAMILIA, 12))
@@ -894,23 +951,38 @@ class NfseDesktop(tk.Tk):
         entrar = ttk.Button(form, text="Entrar", style="Primaria.TButton")
         entrar.grid(row=5, column=0, sticky="ew", ipady=4)
 
-        estado = tk.Label(form, text="", bg=ui.SURFACE, fg=ui.ERRO, font=ui.PEQUENO,
-                          wraplength=380, justify="left")
-        estado.grid(row=6, column=0, sticky="w", pady=(ui.E3, 0))
+        recado = tk.Frame(form, bg=ui.SURFACE)
+        recado.grid(row=6, column=0, sticky="w", pady=(ui.E3, 0))
+        girador_login = ui.Girador(recado, fundo=ui.SURFACE, lado=14)
+        estado = tk.Label(recado, text="", bg=ui.SURFACE, fg=ui.ERRO,
+                          font=ui.PEQUENO, wraplength=ui.px(380), justify="left")
+        estado.pack(side="left")
+
+        def esperando_o_portal(ligado: bool) -> None:
+            """O girador aparece enquanto o portal não responde."""
+            if ligado:
+                girador_login.pack(side="left", padx=(0, ui.E2), before=estado)
+                girador_login.girar()
+            else:
+                girador_login.parar()
+                girador_login.pack_forget()
 
         self._assinatura(centro, ui.BG, ui.INK_3).pack(pady=(ui.E5, 0))
 
         def concluir(nome: str) -> None:
+            esperando_o_portal(False)
             entrar.state(["!disabled"])
             entrar.configure(text="Entrar")
             self.empresa_logada = nome
             self._refresh_mode_label()
+            self._aquecer_o_portal()
             self.show_documents()
 
         def falhar(mensagem: str) -> None:
+            esperando_o_portal(False)
             entrar.state(["!disabled"])
             entrar.configure(text="Entrar")
-            estado.configure(text=mensagem)
+            estado.configure(text=mensagem, fg=ui.ERRO)
 
         def tentar() -> None:
             estado.configure(text="")
@@ -920,6 +992,8 @@ class NfseDesktop(tk.Tk):
                 return
             entrar.state(["disabled"])
             entrar.configure(text="Entrando…")
+            estado.configure(text="Falando com o portal…", fg=ui.INK_3)
+            esperando_o_portal(True)
 
             def trabalho() -> None:
                 try:
@@ -936,6 +1010,25 @@ class NfseDesktop(tk.Tk):
         senha.bind("<Return>", lambda _e: tentar())
         usuario.bind("<Return>", lambda _e: senha.focus_set())
         (senha if usuario.get() else usuario).focus_set()
+
+    def _aquecer_o_portal(self) -> None:
+        """Traz para a memória o que a emissão vai pedir, antes de ser pedido.
+
+        `prestador.do_portal()` é uma ida à rede na primeira vez de cada
+        empresa, e quem a chama é o botão de emitir — na thread da tela. Feita
+        aqui, a resposta já está guardada quando o clique chegar, e o clique
+        não espera por rede nenhuma.
+
+        Falhar aqui não é problema: quem precisa do dado torna a pedir, e aí
+        o erro aparece no lugar certo, com a nota na frente.
+        """
+        def trabalho() -> None:
+            try:
+                prestador.do_portal()
+            except Exception as exc:
+                registro.falha("aquecer dados do prestador", exc)
+
+        threading.Thread(target=trabalho, daemon=True).start()
 
     def sair(self) -> None:
         if not messagebox.askyesno("Trocar de empresa", "Encerrar a sessão desta empresa?"):
@@ -1152,6 +1245,7 @@ class NfseDesktop(tk.Tk):
         documento.grid(row=0, column=0, sticky="ew")
         botao_buscar = ttk.Button(linha_doc, text="Buscar")
         botao_buscar.grid(row=0, column=1, padx=(ui.E2, 0))
+        girador_tomador = ui.Girador(linha_doc, fundo=ui.SURFACE, lado=16)
         if defaults.get("tomador.documento"):
             documento.insert(0, validation.format_document(defaults["tomador.documento"]))
 
@@ -1387,10 +1481,18 @@ class NfseDesktop(tk.Tk):
                 return
             situacao_tomador.configure(text="Consultando o cliente no portal…", fg=ui.INK_3)
             botao_buscar.state(["disabled"])
+            girador_tomador.grid(row=0, column=2, padx=(ui.E2, 0))
+            girador_tomador.girar()
+
+            def parou() -> None:
+                girador_tomador.parar()
+                if girador_tomador.winfo_manager():
+                    girador_tomador.grid_forget()
 
             def achou(dados: dict[str, str]) -> None:
                 if not situacao_tomador.winfo_exists():
                     return
+                parou()
                 botao_buscar.state(["!disabled"])
                 nome = dados.get("razao_social") or digitado
                 situacao_tomador.configure(text=f"Cliente encontrado no portal: {nome}",
@@ -1402,6 +1504,7 @@ class NfseDesktop(tk.Tk):
             def nao_achou() -> None:
                 if not situacao_tomador.winfo_exists():
                     return
+                parou()
                 botao_buscar.state(["!disabled"])
                 situacao_tomador.configure(
                     text="O portal não tem este CNPJ cadastrado — preencha os dados abaixo.",
@@ -1412,6 +1515,7 @@ class NfseDesktop(tk.Tk):
 
             def falhou(mensagem: str) -> None:
                 if situacao_tomador.winfo_exists():
+                    parou()
                     botao_buscar.state(["!disabled"])
                     situacao_tomador.configure(text=f"Não consegui consultar: {mensagem}",
                                                fg=ui.ERRO)
@@ -3163,6 +3267,25 @@ class NfseDesktop(tk.Tk):
             botao = getattr(self, nome, None)
             if botao is not None and botao.winfo_exists():
                 botao.state(["disabled"] if busy else ["!disabled"])
+        self._avisar_transmissao(busy)
+
+    def _avisar_transmissao(self, ligado: bool) -> None:
+        """Enquanto a nota está indo, algo se mexe no canto da tela.
+
+        O botão desabilitado e o cursor de relógio dizem "não clique de novo";
+        nenhum dos dois diz "ainda estou trabalhando". Numa transmissão que
+        pode levar dezenas de segundos, é a diferença entre esperar e achar
+        que travou — e fechar o programa no meio do envio.
+        """
+        aberto = getattr(self, "_espera_transmissao", None)
+        if aberto is not None:
+            self.avisos.fechar(aberto)
+            self._espera_transmissao = None
+        if ligado:
+            self._espera_transmissao = self.avisos.trabalhando(
+                "Transmitindo ao portal",
+                "A prefeitura está processando a nota. Não feche o programa.",
+            )
 
     def _submit_item(self, item: dict[str, Any]) -> None:
         if self._busy:
@@ -3788,7 +3911,8 @@ class ViewDocumentos(tk.Frame):
                      text="Clique numa nota para ver tudo sobre ela aqui — "
                           "inclusive por que foi recusada.",
                      bg=ui.BG, fg=ui.INK_3, font=ui.MICRO, justify="left",
-                     wraplength=310, anchor="w").pack(fill="x", pady=(ui.E3, 0))
+                     wraplength=ui.px(310), anchor="w").pack(fill="x",
+                                                            pady=(ui.E3, 0))
             return
 
         status = doc.get("status", "")

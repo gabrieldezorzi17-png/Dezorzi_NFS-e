@@ -12,6 +12,7 @@ import hashlib
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -5756,3 +5757,470 @@ class ColunaDeDetalheVaziaTests(unittest.TestCase):
         textos = self._rotulos(vista.coluna_detalhe)
         self.assertFalse(any("faturado" in t for t in textos), textos)
         self.assertTrue(any("CLIENTE" in t for t in textos), textos)
+
+
+class MedidaDeTextoTests(unittest.TestCase):
+    """Medir texto ficou barato — e tem de continuar dando o mesmo número.
+
+    A conta de antes: desenhar a lista de notas gastava 657 ms, e 263 deles
+    eram 492 chamadas a `ui.medir`, cada uma criando um objeto de fonte novo
+    no Tcl. Guardar a fonte e a largura derrubou a tela para 414 ms. Estes
+    testes cobram as duas coisas que a otimização não pode ter quebrado: o
+    valor medido e a vida do cache entre janelas.
+    """
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.raiz.geometry("400x200")
+        ui.escolher_familia(self.raiz)
+
+    def tearDown(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+
+    def test_mede_o_mesmo_que_uma_fonte_recem_criada(self):
+        from tkinter import font as tkfont
+
+        for fonte in (ui.CORPO, ui.PEQUENO, ui.MICRO_FORTE):
+            for palavra in ("METALÚRGICA BANDEIRANTES S.A.", "R$ 1.234,56", "x"):
+                esperado = tkfont.Font(font=fonte).measure(palavra)
+                self.assertEqual(ui.medir(palavra, fonte), esperado,
+                                 f"{palavra!r} em {fonte}")
+
+    def test_a_segunda_medida_nao_vai_ao_tcl(self):
+        ui.medir("uma frase qualquer", ui.CORPO)
+        self.assertIn((str(ui.CORPO), "uma frase qualquer"), ui._LARGURAS)
+
+    def test_o_cache_nao_atravessa_janelas(self):
+        """Fonte pertence ao interpretador que a criou.
+
+        Sem derrubar o cache, a primeira medida da janela seguinte estouraria
+        TclError — num lugar sem nenhuma relação com a causa.
+        """
+        ui.medir("antes", ui.CORPO)
+        self.raiz.destroy()
+        self.raiz = tk.Tk()
+        ui.escolher_familia(self.raiz)
+        self.assertGreater(ui.medir("antes", ui.CORPO), 0)
+
+    def test_encurtar_cabe_na_largura_pedida(self):
+        rotulo = tk.Label(self.raiz, text="", font=ui.PEQUENO)
+        inteiro = "DEZORZI SERVIÇOS INDUSTRIAIS LTDA ME"
+        for largura in (60, 90, 120, 180):
+            ui.encurtar(rotulo, inteiro, largura)
+            escrito = str(rotulo.cget("text"))
+            self.assertLessEqual(ui.medir(escrito, ui.PEQUENO), largura,
+                                 f"{escrito!r} não cabe em {largura}px")
+            self.assertTrue(escrito.endswith("…"))
+
+    def test_a_busca_binaria_corta_onde_a_linear_cortava(self):
+        """O jeito antigo — tirar uma letra por vez — é o padrão-ouro aqui."""
+        rotulo = tk.Label(self.raiz, text="", font=ui.PEQUENO)
+        inteiro = "METALÚRGICA BANDEIRANTES DO BRASIL S.A."
+        for largura in (50, 75, 100, 150, 200):
+            reticencia = ui.medir("…", ui.PEQUENO)
+            cortado = inteiro
+            while cortado and ui.medir(cortado, ui.PEQUENO) + reticencia > largura:
+                cortado = cortado[:-1]
+            esperado = (cortado.rstrip() + "…") if cortado.rstrip() else "…"
+            ui.encurtar(rotulo, inteiro, largura)
+            self.assertEqual(str(rotulo.cget("text")), esperado, f"em {largura}px")
+
+    def test_texto_que_cabe_sai_inteiro(self):
+        rotulo = tk.Label(self.raiz, text="", font=ui.PEQUENO)
+        ui.encurtar(rotulo, "curto", 400)
+        self.assertEqual(str(rotulo.cget("text")), "curto")
+
+
+class EscalaDaTelaTests(unittest.TestCase):
+    """Em 125% e 150% a letra cresce; o que a segura tem de crescer junto.
+
+    Medido antes de existir `px`: num monitor a 150%, a coluna de valores
+    mostrava "R$ .820,6" no lugar de "R$ 4.820,00" — o dígito de milhar
+    sumia, numa lista de notas fiscais.
+    """
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.raiz.withdraw()
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        ui.aplicar_escala(self.raiz, 1.0)
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+
+    def test_a_100_por_cento_nada_muda(self):
+        ui.aplicar_escala(self.raiz, 1.0)
+        self.assertEqual(ui.px(252), 252)
+        self.assertEqual((ui.E1, ui.E2, ui.E3, ui.E4, ui.E5, ui.E6),
+                         (4, 8, 12, 16, 24, 32))
+        self.assertEqual(ui.RAIO, 9)
+        self.assertEqual(ui.ALTURA_LINHA, 48)
+
+    def test_a_150_por_cento_tudo_cresce_junto(self):
+        ui.aplicar_escala(self.raiz, 1.5)
+        self.assertEqual(ui.px(252), 378)
+        self.assertEqual(ui.E3, 18)
+        self.assertEqual(ui.RAIO, 14)
+        self.assertEqual(ui.ALTURA_LINHA, 72)
+        self.assertEqual(ui.ALTURA_CABECALHO, 57)
+        self.assertEqual(ui.Segmentado.ALTURA, 57)
+
+    def test_a_conta_parte_sempre_do_original(self):
+        """Aplicar sobre o resultado anterior comporia os fatores.
+
+        Duas trocas de monitor deixariam o programa com o dobro do
+        espaçamento — e ninguém ligaria uma coisa à outra.
+        """
+        ui.aplicar_escala(self.raiz, 1.5)
+        ui.aplicar_escala(self.raiz, 1.25)
+        self.assertEqual(ui.E3, 15)
+        self.assertEqual(ui.px(100), 125)
+        ui.aplicar_escala(self.raiz, 1.0)
+        self.assertEqual(ui.E3, 12)
+
+    def test_as_colunas_da_lista_acompanham(self):
+        ui.aplicar_escala(self.raiz, 1.0)
+        cem = {c.chave: c.largura for c in desktop.colunas_de_notas()}
+        ui.aplicar_escala(self.raiz, 1.5)
+        meio = {c.chave: c.largura for c in desktop.colunas_de_notas()}
+        for chave, largura in cem.items():
+            self.assertEqual(meio[chave], round(largura * 1.5), chave)
+
+    def test_escala_invalida_nao_derruba_nada(self):
+        for valor in (0, -2, None):
+            ui.aplicar_escala(self.raiz, valor)
+            self.assertEqual(ui.px(10), 10)
+
+
+class NitidezPorMonitorTests(unittest.TestCase):
+    """O programa se declara ciente por monitor, não por sistema.
+
+    Com "por sistema", arrastar a janela para um monitor de densidade
+    diferente faz o Windows esticar a imagem — é dali que vem o borrado.
+    """
+
+    def test_ativar_nitidez_devolve_um_fator_util(self):
+        fator = ui.ativar_nitidez()
+        self.assertIsInstance(fator, float)
+        self.assertGreater(fator, 0)
+
+    def test_no_windows_a_ciencia_e_por_monitor(self):
+        if sys.platform != "win32":
+            self.skipTest("só o Windows tem essa noção")
+        import ctypes
+
+        ui.ativar_nitidez()
+        try:
+            nivel = ctypes.c_int()
+            ctypes.windll.shcore.GetProcessDpiAwareness(None, ctypes.byref(nivel))
+        except Exception as exc:
+            self.skipTest(f"shcore ausente: {exc}")
+        # 2 = por monitor. 1 = por sistema, que é o que havia antes.
+        self.assertEqual(nivel.value, 2)
+
+    def test_densidade_da_janela_responde(self):
+        try:
+            raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        raiz.withdraw()
+        try:
+            densidade = ui.densidade_da_janela(raiz)
+            self.assertIsInstance(densidade, float)
+            self.assertGreater(densidade, 0)
+        finally:
+            raiz.destroy()
+
+
+class AvisoQueGiraTests(unittest.TestCase):
+    """A espera longa mostra alguma coisa se mexendo.
+
+    `ui.Girador` existia e não era chamado em lugar nenhum — o programa
+    anunciava as esperas só por texto, e texto parado não distingue "está
+    indo" de "morreu".
+    """
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.raiz.geometry("600x400")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+        self.avisos = ui.Notificacoes(self.raiz)
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        try:
+            self.avisos.limpar()
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    def _giradores(self, dentro):
+        achados = []
+
+        def varrer(widget):
+            for filho in widget.winfo_children():
+                if isinstance(filho, ui.Girador):
+                    achados.append(filho)
+                varrer(filho)
+
+        varrer(dentro)
+        return achados
+
+    def test_o_aviso_de_trabalho_tem_um_girador(self):
+        janela = self.avisos.trabalhando("Transmitindo", "aguarde")
+        self.assertIsNotNone(janela)
+        self.raiz.update()
+        self.assertEqual(len(self._giradores(janela)), 1)
+
+    def test_ele_nao_some_sozinho(self):
+        """Some quando o portal responde, não quando o relógio bate.
+
+        Um aviso com prazo deixaria a tela muda no meio de uma transmissão.
+        """
+        janela = self.avisos.trabalhando("Transmitindo")
+        self.raiz.update()
+        fim = time.time() + 1.2
+        while time.time() < fim:
+            self.raiz.update()
+            time.sleep(0.02)
+        self.assertTrue(janela.winfo_exists())
+        self.assertIn(janela, self.avisos._abertas)
+
+    def test_o_aviso_comum_continua_com_selo(self):
+        janela = self.avisos.mostrar("Pronto", "salvo")
+        self.raiz.update()
+        self.assertEqual(self._giradores(janela), [])
+
+    def test_o_girador_para_ao_ser_destruido(self):
+        girador = ui.Girador(self.raiz)
+        girador.pack()
+        girador.girar()
+        self.assertIsNotNone(girador._tarefa)
+        girador.destroy()
+        self.raiz.update()
+        self.assertIsNone(girador._tarefa)
+
+
+class TransmissaoAvisadaTests(unittest.TestCase):
+    """Enquanto a nota vai ao portal, o canto da tela diz que ela está indo."""
+
+    def setUp(self):
+        try:
+            self.app = desktop.NfseDesktop()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.app.withdraw()
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        try:
+            self.app.destroy()
+        except Exception:
+            pass
+
+    def test_ocupado_abre_o_aviso_e_livre_fecha(self):
+        self.app._set_busy(True)
+        self.app.update()
+        self.assertIsNotNone(self.app._espera_transmissao)
+        self.assertTrue(self.app._espera_transmissao.winfo_exists())
+        self.app._set_busy(False)
+        self.app.update()
+        self.assertIsNone(self.app._espera_transmissao)
+
+    def test_dois_ocupados_seguidos_nao_deixam_aviso_solto(self):
+        self.app._set_busy(True)
+        primeiro = self.app._espera_transmissao
+        self.app._set_busy(True)
+        self.app.update()
+        self.assertFalse(primeiro.winfo_exists())
+        self.assertEqual(len(self.app.avisos._abertas), 1)
+        self.app._set_busy(False)
+
+
+class TrocaDeTemaNaoDeslogaTests(unittest.TestCase):
+    """Trocar o tema em Ajustes devolvia a pessoa para a tela de login.
+
+    O mapa de telas do redesenho usava "config" onde `show_settings` grava
+    "ajustes", e o `.get` caía no padrão — que é a tela de entrada. A sessão
+    continuava de pé; só a tela mentia.
+    """
+
+    def setUp(self):
+        try:
+            self.app = desktop.NfseDesktop()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.app.withdraw()
+        self.app.empresa_logada = "EMPRESA TESTE"
+        self.original = storage.list_all
+        storage.list_all = lambda: []
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        storage.list_all = self.original
+        try:
+            self.app.destroy()
+        except Exception:
+            pass
+
+    def test_o_mapa_do_redesenho_conhece_todas_as_secoes(self):
+        import inspect
+
+        fonte = inspect.getsource(desktop.NfseDesktop._redesenhar)
+        for secao, _rotulo in desktop.BarraDeComando.SECOES:
+            self.assertIn(f'"{secao}"', fonte,
+                          f"o redesenho não sabe remontar a seção {secao}")
+
+    def test_trocar_o_tema_em_ajustes_continua_em_ajustes(self):
+        self.app.show_settings()
+        self.app.update()
+        self.assertEqual(self.app._nav_atual, "ajustes")
+        antes = ui.TEMA
+        self.app._trocar_tema("claro" if antes == "escuro" else "escuro")
+        self.app.update()
+        self.assertEqual(self.app._nav_atual, "ajustes")
+        self.app._trocar_tema(antes)
+
+
+class PortalForaDoLacoDaTelaTests(unittest.TestCase):
+    """Reler a versão do portal não pode segurar a janela.
+
+    Enquanto a prefeitura não respondia, a janela não repintava e o Windows
+    a marcava como "não está respondendo" — o retrato de um programa
+    quebrado, quando ele só estava esperando.
+    """
+
+    def test_reler_o_portal_roda_em_thread(self):
+        import inspect
+
+        fonte = inspect.getsource(desktop.NfseDesktop._reler_portal)
+        self.assertIn("threading.Thread", fonte)
+        self.assertIn("_na_interface", fonte)
+
+    def test_o_login_aquece_o_cache_do_prestador(self):
+        """`prestador.do_portal` é rede na primeira vez de cada empresa.
+
+        Quem a chama é o botão de emitir, na thread da tela. Aquecida no
+        login, a resposta já está na memória quando o clique chegar.
+        """
+        import inspect
+
+        fonte = inspect.getsource(desktop.NfseDesktop._aquecer_o_portal)
+        self.assertIn("threading.Thread", fonte)
+        self.assertIn("prestador.do_portal", fonte)
+        self.assertIn("_aquecer_o_portal",
+                      inspect.getsource(desktop.NfseDesktop.show_login))
+
+
+class ListaDeNotasEmMemoriaTests(unittest.TestCase):
+    """Reler o disco inteiro a cada tela montada tem limite.
+
+    MEDIDO: ~400 us por nota nesta máquina. Com 18 notas, 7 ms — nada. Com
+    600, 11,7 s na primeira leitura e 68 ms nas seguintes, depois do cache.
+    A tela de Notas é remontada a cada ida e volta entre as seções.
+
+    O que estes testes cobram não é a velocidade: é o cache não mentir. Nota
+    alterada por fora, nota apagada e nota gravada pelo próprio programa têm
+    de aparecer na chamada seguinte.
+    """
+
+    def setUp(self):
+        self.pasta = Path(tempfile.mkdtemp(prefix="notas_")).resolve()
+        self.anterior = paths.DATA_DIR
+        paths.DATA_DIR = self.pasta
+        storage.esquecer_o_que_foi_lido()
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        paths.DATA_DIR = self.anterior
+        storage.esquecer_o_que_foi_lido()
+        shutil.rmtree(self.pasta, ignore_errors=True)
+
+    def _gravar(self, identidade, **campos):
+        doc = {"id": identidade, "status": "draft", "created_at": "2026-08-29",
+               "payload": {"servico": {"valor": "10.00"}}}
+        doc.update(campos)
+        (self.pasta / f"{identidade}.json").write_text(
+            json.dumps(doc), encoding="utf-8")
+        return doc
+
+    def test_lista_o_que_esta_na_pasta(self):
+        self._gravar("00000001-0000-0000-0000-000000000000")
+        self._gravar("00000002-0000-0000-0000-000000000000")
+        self.assertEqual(len(storage.list_all()), 2)
+
+    def test_a_segunda_chamada_nao_reabre_os_arquivos(self):
+        self._gravar("00000001-0000-0000-0000-000000000000")
+        storage.list_all()
+        alvo = next(self.pasta.glob("*.json"))
+        proibido = []
+        original = Path.read_text
+
+        def espiao(self_path, *args, **kwargs):
+            if self_path == alvo:
+                proibido.append(self_path)
+            return original(self_path, *args, **kwargs)
+
+        Path.read_text = espiao
+        try:
+            storage.list_all()
+        finally:
+            Path.read_text = original
+        self.assertEqual(proibido, [], "releu um arquivo que não mudou")
+
+    def test_nota_alterada_por_fora_aparece(self):
+        identidade = "00000001-0000-0000-0000-000000000000"
+        self._gravar(identidade)
+        storage.list_all()
+        time.sleep(0.02)
+        self._gravar(identidade, status="failed")
+        achada = next(d for d in storage.list_all() if d["id"] == identidade)
+        self.assertEqual(achada["status"], "failed")
+
+    def test_nota_apagada_some_da_lista_e_da_memoria(self):
+        self._gravar("00000001-0000-0000-0000-000000000000")
+        self._gravar("00000002-0000-0000-0000-000000000000")
+        storage.list_all()
+        next(self.pasta.glob("*.json")).unlink()
+        self.assertEqual(len(storage.list_all()), 1)
+        self.assertEqual(len(storage._LIDAS), 1)
+
+    def test_gravar_pelo_programa_derruba_a_versao_guardada(self):
+        """`save` grava por os.replace; a lista seguinte tem de ver o novo."""
+        item = storage.create({"servico": {"valor": "10.00"}})
+        storage.list_all()
+        item["status"] = "submitted"
+        storage.save(item)
+        achada = next(d for d in storage.list_all() if d["id"] == item["id"])
+        self.assertEqual(achada["status"], "submitted")
+
+    def test_arquivo_ilegivel_continua_sendo_pulado(self):
+        self._gravar("00000001-0000-0000-0000-000000000000")
+        (self.pasta / "quebrada.json").write_text("{ isto nao e json",
+                                                  encoding="utf-8")
+        self.assertEqual(len(storage.list_all()), 1)
+        self.assertEqual(len(storage.list_all()), 1)
+
+    def test_pasta_que_some_limpa_a_memoria(self):
+        self._gravar("00000001-0000-0000-0000-000000000000")
+        storage.list_all()
+        shutil.rmtree(self.pasta, ignore_errors=True)
+        self.assertEqual(storage.list_all(), [])
+        self.assertEqual(storage._LIDAS, {})

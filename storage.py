@@ -47,6 +47,10 @@ def _write_atomic(path: Path, item: dict[str, Any]) -> None:
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(temporary, path)
+            # A nota que acabou de ser gravada nao pode continuar valendo a
+            # versao antiga em memoria. O carimbo de data sozinho quase sempre
+            # bastaria; "quase" nao serve para arquivo fiscal.
+            _LIDAS.pop(str(path), None)
         finally:
             temporary.unlink(missing_ok=True)
 
@@ -94,19 +98,62 @@ def record_submission(item: dict[str, Any], record: dict[str, Any], status: str)
         return save(item)
 
 
+# O que já foi lido, por caminho: (carimbo em nanossegundos, tamanho,
+# conteúdo). Arquivo cujo carimbo e tamanho não mudaram não é aberto de novo.
+#
+# Nanossegundos, e não segundos: duas gravações no mesmo tique do relógio
+# dariam o mesmo carimbo, e a segunda passaria despercebida. Além disso, toda
+# gravação feita por aqui derruba a entrada na hora — carimbo é a rede de
+# segurança para o que muda por fora, não o caminho normal.
+#
+# Os dicionários devolvidos são os mesmos que ficam guardados. Nenhum lugar do
+# programa altera nota vinda de `list_all` (conferido); quem vai alterar usa
+# `get`, que sempre lê do disco.
+_LIDAS: dict[str, tuple[float, int, dict[str, Any]]] = {}
+
+
+def esquecer_o_que_foi_lido() -> None:
+    """Joga fora o que está na memória. Para testes e para trocar de pasta."""
+    _LIDAS.clear()
+
+
 def list_all() -> list[dict[str, Any]]:
-    """Lista as notas. Um arquivo ilegível é pulado, não derruba a listagem."""
+    """Lista as notas. Um arquivo ilegível é pulado, não derruba a listagem.
+
+    O `glob` é refeito a cada chamada — quem manda é o disco, e nota nova ou
+    apagada aparece na hora. O que se evita é reabrir e reinterpretar arquivo
+    que ninguém tocou: ler uma nota custa ~400 us, e esta função é chamada
+    toda vez que a tela de Notas é montada.
+    """
     if not paths.DATA_DIR.exists():
+        _LIDAS.clear()
         return []
     items: list[dict[str, Any]] = []
+    vistos: set[str] = set()
     for path in sorted(paths.DATA_DIR.glob("*.json")):
+        chave = str(path)
+        vistos.add(chave)
         try:
-            item = json.loads(path.read_text(encoding="utf-8"))
+            marca = path.stat()
+            assinatura = (marca.st_mtime_ns, marca.st_size)
+            guardada = _LIDAS.get(chave)
+            if guardada is not None and guardada[:2] == assinatura:
+                item = guardada[2]
+            else:
+                item = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(item, dict) and item.get("id"):
+                    _LIDAS[chave] = (*assinatura, item)
         except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
             print(f"[storage] ignorando {path.name}: {exc}")
+            _LIDAS.pop(chave, None)
             continue
         if isinstance(item, dict) and item.get("id"):
             items.append(item)
+    # Arquivo que saiu da pasta sai da memória junto — senão a lixeira e a
+    # troca de pasta deixariam notas lembradas para sempre.
+    for chave in list(_LIDAS):
+        if chave not in vistos:
+            del _LIDAS[chave]
     return sorted(items, key=lambda item: item.get("created_at", ""), reverse=True)
 
 

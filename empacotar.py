@@ -115,6 +115,57 @@ def preparar_semente(*, seguro: bool) -> Path:
     return SEMENTE
 
 
+# Dados que entram no pacote e nunca são abertos. Cada um é um arquivo a menos
+# para descompactar toda vez que o programa abre — e no arquivo único isso é o
+# custo da abertura inteira.
+#
+# `tzdata` é a tabela de fusos horários do Tcl: uma linha por cidade do mundo,
+# 609 arquivos, para o comando `clock` do Tcl com nome de fuso. As datas deste
+# programa são todas do `datetime` do Python.
+DADOS_INUTEIS = ("_tcl_data/tzdata",)
+
+# O gerador de .spec não conhece estas: são opções de compilação, não de
+# receita. Passá-las ali é erro de linha de comando.
+SO_NA_COMPILACAO = {"--noconfirm"}
+SO_NA_COMPILACAO_COM_VALOR = {"--distpath", "--workpath"}
+
+PENEIRA = """
+# --- acrescentado por empacotar.py -------------------------------------- #
+# Tira do pacote o que nunca e aberto. Ver DADOS_INUTEIS la.
+_fora = {fora}
+a.datas = [_item for _item in a.datas
+           if not str(_item[0]).replace(chr(92), "/").startswith(_fora)]
+# ------------------------------------------------------------------------ #
+"""
+
+
+def _receita(comando: list[str]) -> list[str]:
+    """A mesma linha de comando, sem o que só vale na hora de compilar."""
+    limpa: list[str] = []
+    pular = False
+    for parte in comando:
+        if pular:
+            pular = False
+            continue
+        if parte in SO_NA_COMPILACAO:
+            continue
+        if parte in SO_NA_COMPILACAO_COM_VALOR:
+            pular = True
+            continue
+        limpa.append(parte)
+    return limpa
+
+
+def _peneirar(spec: Path) -> None:
+    """Insere o filtro no .spec, entre a análise e o empacotamento."""
+    conteudo = spec.read_text(encoding="utf-8")
+    marca_do_pyz = "pyz = PYZ("
+    assert marca_do_pyz in conteudo, "o .spec do PyInstaller mudou de forma"
+    peneira = PENEIRA.format(fora=repr(DADOS_INUTEIS))
+    spec.write_text(conteudo.replace(marca_do_pyz, peneira + "\n" + marca_do_pyz, 1),
+                    encoding="utf-8")
+
+
 def construir(*, unico: bool) -> Path:
     import marca
 
@@ -147,7 +198,17 @@ def construir(*, unico: bool) -> Path:
                 destino = nome if origem.is_dir() else "."
                 comando += ["--add-data", f"{origem}{os.pathsep}{destino}"]
 
-    subprocess.run(comando, check=True, cwd=BASE)
+    # Em dois passos: primeiro o `.spec`, que é peneirado; depois a compilação
+    # a partir dele. A linha de comando do PyInstaller não sabe excluir dado —
+    # só módulo —, e o que pesa na abertura é justamente dado.
+    receita = _receita(comando)
+    receita[1:3] = ["-m", "PyInstaller.utils.cliutils.makespec"]
+    subprocess.run(receita, check=True, cwd=BASE)
+    spec = BASE / f"{NOME}.spec"
+    _peneirar(spec)
+    subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm",
+                    "--distpath", str(SAIDA), "--workpath", str(TRABALHO),
+                    str(spec)], check=True, cwd=BASE)
     return (SAIDA / f"{NOME}.exe") if unico else (SAIDA / NOME)
 
 

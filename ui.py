@@ -182,6 +182,18 @@ E1, E2, E3, E4, E5, E6 = 4, 8, 12, 16, 24, 32
 
 RAIO = 9  # arredondamento das pílulas e botões desenhados
 
+# Quantos pixels de tela vale um pixel de projeto. 1.0 a 96 dpi (100%), 1.25
+# a 120 (125%), 1.5 a 144 (150%). Quem escreve tamanho em pixel passa por
+# `px`: a letra cresce com a densidade, e o que a segura tem de crescer junto.
+ESCALA = 1.0
+_ESPACOS_BASE = (4, 8, 12, 16, 24, 32)
+_RAIO_BASE = 9
+
+
+def px(medida: float) -> int:
+    """Pixel de projeto convertido para o pixel desta tela."""
+    return max(1, round(medida * ESCALA))
+
 
 def escolher_familia(raiz: tk.Misc) -> str:
     """Segoe UI primeiro. É a que sai nítida nesta tela — medido.
@@ -252,18 +264,64 @@ def ativar_nitidez() -> float:
 
     Sem isto, telas em 125% ou 150% mostram o aplicativo esticado por
     interpolação — o texto sai borrado. Devolve o fator de escala aplicado.
+
+    Três tentativas, da melhor para a que sempre existe:
+
+    1. *por monitor v2* — o programa é redesenhado na densidade de cada
+       monitor, e o Windows ainda escala sozinho a barra de título. É o que
+       elimina o borrado ao arrastar a janela entre dois monitores de
+       densidades diferentes, caso cada vez mais comum: notebook 4K com um
+       monitor Full HD ao lado.
+    2. *por monitor v1* — o mesmo, sem a ajuda na barra de título. Windows 8.1
+       em diante.
+    3. *por sistema* — o que havia aqui antes. Nítido no monitor principal,
+       esticado nos outros.
+
+    Tem de rodar antes de a janela existir; depois, o Windows já decidiu.
     """
     if sys.platform != "win32":
         return 1.0
     try:
         import ctypes
 
-        # 1 = por sistema; suficiente e mais previsível que "por monitor".
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
-        return ctypes.windll.user32.GetDpiForSystem() / 96.0
+        usuario = ctypes.windll.user32
+        # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+        try:
+            usuario.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+            usuario.SetProcessDpiAwarenessContext.restype = ctypes.c_bool
+            if not usuario.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)):
+                raise OSError("v2 recusada")
+        except Exception:
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            except Exception:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        return usuario.GetDpiForSystem() / 96.0
     except Exception:
         # Windows antigo ou shcore ausente: segue sem nitidez extra.
         return 1.0
+
+
+def densidade_da_janela(janela: tk.Misc) -> float:
+    """A escala do monitor onde a janela ESTÁ, não a do monitor principal.
+
+    Só faz diferença com ciência por monitor — e é justamente aí que faz toda
+    a diferença: sem perguntar, a janela arrastada para o outro monitor
+    continuaria desenhando na densidade do primeiro.
+    """
+    if sys.platform != "win32":
+        return ESCALA
+    try:
+        import ctypes
+
+        usuario = ctypes.windll.user32
+        if not hasattr(usuario, "GetDpiForWindow"):
+            return ESCALA
+        alça = usuario.GetParent(janela.winfo_id()) or janela.winfo_id()
+        dpi = usuario.GetDpiForWindow(alça)
+        return (dpi / 96.0) if dpi else ESCALA
+    except Exception:
+        return ESCALA
 
 
 def identificar_no_windows(identidade: str) -> None:
@@ -332,8 +390,36 @@ def pintar_barra_de_titulo(janela: tk.Misc, *, escuro: bool,
 
 
 def aplicar_escala(raiz: tk.Misc, fator: float) -> None:
-    """Reajusta o tamanho do ponto para o app não encolher em telas HiDPI."""
-    if fator and abs(fator - 1.0) > 0.01:
+    """Reajusta o app inteiro para a densidade da tela.
+
+    Duas metades, e faltava a segunda. `tk scaling` faz a LETRA crescer: as
+    fontes daqui são declaradas em pontos, e ponto é medida de papel — o Tk
+    resolve para pixel usando esta escala. O que não crescia era o que segura
+    a letra: coluna, espaçamento, raio de canto, tudo pixel cravado. A 150% a
+    letra ficava 1,5 vez maior dentro da mesma caixa, e o valor da nota
+    aparecia cortado.
+
+    Recalculado sempre a partir das medidas originais. Aplicar sobre o
+    resultado anterior comporia os fatores, e uma segunda troca de monitor
+    deixaria o programa com o dobro do espaçamento.
+    """
+    global ESCALA, E1, E2, E3, E4, E5, E6, RAIO
+    global ALTURA_LINHA, ALTURA_CABECALHO
+
+    fator = float(fator or 1.0)
+    if fator <= 0:
+        fator = 1.0
+    ESCALA = fator
+    E1, E2, E3, E4, E5, E6 = (max(1, round(medida * fator))
+                              for medida in _ESPACOS_BASE)
+    RAIO = max(1, round(_RAIO_BASE * fator))
+    # A linha da tabela tem duas linhas de texto: a razão social e, embaixo,
+    # o CCM. A 125% a segunda saía cortada ao meio — a letra crescia, a linha
+    # não. O mesmo vale para o cabeçalho e para a barra de seções.
+    ALTURA_LINHA = max(1, round(_ALTURA_LINHA_BASE * fator))
+    ALTURA_CABECALHO = max(1, round(_ALTURA_CABECALHO_BASE * fator))
+    Segmentado.ALTURA = max(1, round(Segmentado.ALTURA_BASE * fator))
+    if abs(fator - 1.0) > 0.01:
         raiz.tk.call("tk", "scaling", fator * 96.0 / 72.0)
 
 
@@ -672,6 +758,10 @@ def encurtar(rotulo: tk.Label, texto: str, largura: int) -> None:
 
     O Tk não tem `text-overflow`; sem isto ele corta no meio da letra e o
     resultado parece defeito, não abreviação.
+
+    O corte é por busca binária. Tirar uma letra por vez custava uma medida
+    por letra — trinta medidas para abreviar um nome de empresa, numa tela que
+    tem dezenas deles.
     """
     rotulo.texto_inteiro = texto
     if largura <= 8 or not texto:
@@ -681,19 +771,72 @@ def encurtar(rotulo: tk.Label, texto: str, largura: int) -> None:
     if medir(texto, fonte) <= largura:
         rotulo.configure(text=texto)
         return
-    reticencia = medir("…", fonte)
-    cortado = texto
-    while cortado and medir(cortado, fonte) + reticencia > largura:
-        cortado = cortado[:-1]
-    rotulo.configure(text=(cortado.rstrip() + "…") if cortado else "…")
+    disponivel = largura - medir("…", fonte)
+    baixo, alto = 0, len(texto)
+    while baixo < alto:
+        meio = (baixo + alto + 1) // 2
+        if medir(texto[:meio], fonte) <= disponivel:
+            baixo = meio
+        else:
+            alto = meio - 1
+    cortado = texto[:baixo].rstrip()
+    rotulo.configure(text=(cortado + "…") if cortado else "…")
+
+
+# Medir texto é a pergunta mais repetida do programa: cada rótulo que pode ser
+# abreviado a faz, e a tela de notas tem centenas. Sem guardar nada, desenhar
+# a lista criava 492 objetos de fonte no Tcl — 263 dos 657 ms da tela.
+_FONTES: dict[str, tkfont.Font] = {}
+_LARGURAS: dict[tuple[str, str], int] = {}
+_INTERPRETE: list = [None]
+LIMITE_MEDIDAS = 6000
+
+
+def _limpar_se_trocou_de_janela() -> None:
+    """Uma fonte pertence ao interpretador que a criou.
+
+    A suíte de testes abre e fecha dezenas de janelas; guardar a fonte de uma
+    janela morta daria TclError na primeira medida da seguinte — e o programa
+    cairia num lugar sem nenhuma relação com a causa.
+    """
+    atual = getattr(tk, "_default_root", None)
+    if _INTERPRETE[0] is not atual:
+        _INTERPRETE[0] = atual
+        _FONTES.clear()
+        _LARGURAS.clear()
+
+
+def _fonte(especificacao) -> tkfont.Font:
+    chave = str(especificacao)
+    fonte = _FONTES.get(chave)
+    if fonte is None:
+        fonte = tkfont.Font(font=especificacao)
+        _FONTES[chave] = fonte
+    return fonte
 
 
 def medir(texto: str, fonte) -> int:
     """Largura do texto em pixels, para dimensionar o que é desenhado à mão."""
+    _limpar_se_trocou_de_janela()
+    chave = (str(fonte), texto)
+    guardada = _LARGURAS.get(chave)
+    if guardada is not None:
+        return guardada
     try:
-        return tkfont.Font(font=fonte).measure(texto)
+        largura = _fonte(fonte).measure(texto)
     except tk.TclError:
-        return len(texto) * 7
+        # Fonte de uma janela que já morreu, ou nome de fonte inválido: joga
+        # fora o que estava guardado e tenta uma vez do zero.
+        _FONTES.clear()
+        _LARGURAS.clear()
+        try:
+            largura = tkfont.Font(font=fonte).measure(texto)
+        except tk.TclError:
+            return len(texto) * 7
+    if len(_LARGURAS) >= LIMITE_MEDIDAS:
+        _LARGURAS.clear()
+    _LARGURAS[chave] = largura
+    return largura
 
 
 # --------------------------------------------------------------------------- #
@@ -1138,6 +1281,7 @@ class Segmentado(tk.Canvas):
     """
 
     ALTURA = 38
+    ALTURA_BASE = 38      # `aplicar_escala` recalcula ALTURA a partir daqui
     FOLGA = 18          # respiro de cada lado do rótulo
 
     def __init__(self, pai: tk.Widget, itens: list[tuple[str, str]],
@@ -1446,6 +1590,8 @@ class CartaoFiltro(Redondo):
 
 ALTURA_LINHA = 48        # o padrão confortável das tabelas de dados
 ALTURA_CABECALHO = 38
+_ALTURA_LINHA_BASE = 48
+_ALTURA_CABECALHO_BASE = 38
 
 
 class Celula:
@@ -1853,7 +1999,7 @@ def vazio(pai: tk.Widget, simbolo: str, titulo: str, texto: str,
     tk.Label(caixa, text=simbolo, font=(FAMILIA, 30), fg=BORDER_FORTE, bg=SURFACE).pack()
     tk.Label(caixa, text=titulo, font=CORPO_FORTE, fg=INK_2, bg=SURFACE).pack(pady=(E2, 2))
     tk.Label(caixa, text=texto, font=PEQUENO, fg=INK_3, bg=SURFACE,
-             justify="center", wraplength=380).pack()
+             justify="center", wraplength=px(380)).pack()
     if acao:
         ttk.Button(caixa, text=acao[0], style="Primaria.TButton",
                    command=acao[1]).pack(pady=(E4, 0))
@@ -2114,6 +2260,24 @@ class Notificacoes:
         kwargs.setdefault("segundos", 9)
         self.mostrar(titulo, texto, tom="erro", **kwargs)
 
+    def trabalhando(self, titulo: str, texto: str = "") -> tk.Toplevel | None:
+        """Aviso que dura o que a tarefa durar, com um girador no lugar do selo.
+
+        Sem prazo de propósito: quem abriu é quem fecha. Um aviso que some
+        sozinho depois de alguns segundos deixaria a tela muda no meio de uma
+        transmissão — e é exatamente aí que a pessoa quer ver alguma coisa se
+        mexendo.
+        """
+        if not self.raiz.winfo_exists():
+            return None
+        try:
+            janela = self._desenhar(titulo, texto, "info", girando=True)
+        except tk.TclError:
+            return None
+        self._abertas.append(janela)
+        self._reposicionar()
+        return janela
+
     def mostrar(self, titulo: str, texto: str = "", *, tom: str = "info",
                 segundos: float = 4.5) -> tk.Toplevel | None:
         if not self.raiz.winfo_exists():
@@ -2145,7 +2309,8 @@ class Notificacoes:
 
     # -- Desenho --------------------------------------------------------- #
 
-    def _desenhar(self, titulo: str, texto: str, tom: str) -> tk.Toplevel:
+    def _desenhar(self, titulo: str, texto: str, tom: str,
+                  *, girando: bool = False) -> tk.Toplevel:
         cor, fundo = cores_do_tom(tom)
         janela = tk.Toplevel(self.raiz)
         janela.overrideredirect(True)          # sem barra de título
@@ -2169,8 +2334,15 @@ class Notificacoes:
         dentro.pack(side="left", fill="both", expand=True)
         topo = tk.Frame(dentro, bg=SURFACE)
         topo.pack(fill="x")
-        marca = {"sucesso": "✓", "erro": "!", "alerta": "!", "info": "i"}.get(tom, "i")
-        pilula(topo, marca, cor=cor, fundo_pilula=fundo, fundo=SURFACE).pack(side="left")
+        if girando:
+            girador = Girador(topo, fundo=SURFACE, cor=cor, lado=16)
+            girador.pack(side="left")
+            girador.girar()
+        else:
+            marca = {"sucesso": "✓", "erro": "!", "alerta": "!",
+                     "info": "i"}.get(tom, "i")
+            pilula(topo, marca, cor=cor, fundo_pilula=fundo,
+                   fundo=SURFACE).pack(side="left")
         tk.Label(topo, text=titulo, font=CORPO_FORTE, fg=INK, bg=SURFACE,
                  anchor="w", justify="left",
                  wraplength=self.LARGURA - 90).pack(side="left", padx=(E2, 0))
