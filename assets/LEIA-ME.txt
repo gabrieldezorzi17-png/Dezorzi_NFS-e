@@ -23,10 +23,8 @@ Coloque o logotipo nesta pasta com o nome exato:
 
     logo.png
 
-A partir daí ele passa a valer no lugar do desenho. Pelo programa, o mesmo se
-faz em:
-
-    Configurações > Usar meu arquivo de logotipo…
+A partir daí ele passa a valer no lugar do desenho — é só copiar o arquivo
+para a pasta e abrir o programa de novo.
 
 Recomendações para o arquivo:
   * formato PNG (o Tk não lê JPG nem SVG);

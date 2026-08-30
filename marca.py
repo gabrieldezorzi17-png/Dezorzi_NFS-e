@@ -254,13 +254,18 @@ def _do_arquivo(altura: int, pai: tk.Misc | None = None) -> tk.PhotoImage | None
     return original.subsample(fator, fator) if fator > 1 else original
 
 
+# --------------------------------------------------------------------------- #
+# Arquivo PNG
 def esquecer() -> None:
-    """Descarta os pixels já calculados — usado depois de trocar o logo.png."""
+    """Descarta os pixels já calculados.
+
+    Não há mais por onde trocar o logotipo pela tela — mas a suíte troca o
+    `logo.png` entre um teste e outro, e sem limpar o cache o segundo teste
+    mediria os pixels do primeiro.
+    """
     _pixels_cache.clear()
 
 
-# --------------------------------------------------------------------------- #
-# Arquivo PNG
 # --------------------------------------------------------------------------- #
 def png(altura: int = 512) -> bytes:
     """O monograma como arquivo PNG, escrito na mão.
@@ -416,10 +421,3 @@ def icone_do_windows(destino: Path | str) -> tuple[Path, str]:
             return destino, "logotipo"
     salvar_ico(destino)
     return destino, "monograma"
-
-
-def salvar_png(destino: Path | str, altura: int = 512) -> Path:
-    destino = Path(destino)
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_bytes(png(altura))
-    return destino

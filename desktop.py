@@ -209,8 +209,7 @@ def colunas_de_notas() -> list["ui.Celula"]:
 TOM_DO_STATUS = {"submitted": "sucesso", "draft": "neutro", "failed": "erro"}
 
 
-def linha_da_nota(doc: dict[str, Any], prestador_de, *,
-                  ocultar_valores: bool = False) -> dict[str, Any]:
+def linha_da_nota(doc: dict[str, Any], prestador_de) -> dict[str, Any]:
     """Uma nota, no formato que a tabela desenha."""
     payload = doc.get("payload") or {}
     tomador = payload.get("tomador") or {}
@@ -232,7 +231,7 @@ def linha_da_nota(doc: dict[str, Any], prestador_de, *,
                     or "Sem tomador",
                     validation.format_document(documento) if tomador.get("nome") else ""),
         "servico": " ".join((servico.get("descricao") or "—").split()),
-        "valor": "•••" if ocultar_valores else validation.format_money(servico.get("valor")),
+        "valor": validation.format_money(servico.get("valor")),
         "status": (rotulo, TOM_DO_STATUS.get(status, "neutro")),
         "data": (_data_br(doc.get("created_at")), _ha_quanto(doc.get("created_at"))),
         "acoes": {"pdf": status == "submitted" and bool(numero),
@@ -405,7 +404,6 @@ class NfseDesktop(tk.Tk):
 
         self._busy = False
         self._nav_atual = ""
-        self._valores_ocultos = False
         self._abrir_fila_interface()
         ui.aplicar_estilo(self)
         self._montar_menu()
@@ -607,21 +605,6 @@ class NfseDesktop(tk.Tk):
                 f"agora:  {agora}",
             )
 
-    def _abrir_registro(self) -> None:
-        """Mostra o diário — é o que se manda quando algo falha em outra máquina."""
-        arquivo = paths.DATA_DIR / "registro.txt"
-        if not arquivo.exists():
-            self._info(
-                "Diário do programa",
-                "Ainda não há nada registrado. O arquivo é criado conforme o "
-                "programa é usado, e fica em:\n\n" + str(arquivo),
-            )
-            return
-        self._janela_bruta(
-            "Diário do programa",
-            lambda: arquivo.read_text(encoding="utf-8", errors="replace"),
-        )
-
     def _avisar_pasta_travada(self) -> None:
         self._alerta(
             "Pasta somente-leitura",
@@ -630,59 +613,6 @@ class NfseDesktop(tk.Tk):
             "Copie o programa para uma pasta do disco — a Área de Trabalho ou "
             "Documentos servem — e abra de lá.",
         )
-
-    def _trocar_logotipo(self) -> None:
-        """Passa a usar o arquivo oficial da marca no lugar do desenho interno.
-
-        O desenho que acompanha o programa é uma reconstrução do monograma. Com
-        o arquivo original em mãos, este é o caminho de troca: ele é copiado
-        para ``assets/logo.png`` e passa a valer em todas as telas.
-        """
-        escolhido = filedialog.askopenfilename(
-            title="Escolha o arquivo do logotipo",
-            filetypes=[("Imagem PNG", "*.png"), ("Todos os arquivos", "*.*")],
-        )
-        if not escolhido:
-            return
-        origem = Path(escolhido)
-        try:
-            teste = tk.PhotoImage(file=str(origem))
-        except tk.TclError:
-            messagebox.showerror(
-                "Arquivo não aceito",
-                "O Tk só lê PNG e GIF. Exporte o logotipo em PNG e tente de novo.",
-            )
-            return
-        if teste.height() < 80:
-            self._alerta(
-                "Imagem pequena",
-                f"O arquivo tem {teste.height()} px de altura. Abaixo de 80 px a marca "
-                "sai serrilhada na tela de entrada — exporte com uns 600 px.",
-            )
-        marca.ARQUIVO.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(origem, marca.ARQUIVO)
-        marca.esquecer()
-        self._info(
-            "Logotipo trocado",
-            f"O arquivo foi copiado para:\n{marca.ARQUIVO}\n\n"
-            "Feche e abra o programa para ver a marca nova em todas as telas.\n"
-            "Para voltar ao desenho interno, basta apagar esse arquivo.",
-        )
-
-    def _exportar_marca(self) -> None:
-        """Grava o monograma em PNG — para papel timbrado, assinatura, atalho."""
-        destino = filedialog.asksaveasfilename(
-            title="Salvar a marca", defaultextension=".png",
-            initialfile="dezorzi.png", filetypes=[("Imagem PNG", "*.png")],
-        )
-        if not destino:
-            return
-        try:
-            caminho = marca.salvar_png(destino, 600)
-        except OSError as exc:
-            messagebox.showerror("Não deu para salvar", str(exc))
-            return
-        self._sucesso("Marca exportada", f"Salvo em:\n{caminho}")
 
     def _about(self) -> None:
         self._info(
@@ -1159,9 +1089,7 @@ class NfseDesktop(tk.Tk):
                           fg=ui.INK, font=(ui.MONO, 10), anchor="w")
         numero.pack(side="left")
         valor = tk.Label(
-            alto,
-            text=("•••" if self._valores_ocultos
-                  else f"R$ {validation.format_money(servico.get('valor'))}"),
+            alto, text=f"R$ {validation.format_money(servico.get('valor'))}",
             bg=ui.SURFACE, fg=ui.INK, font=ui.PEQUENO_FORTE)
         valor.pack(side="right")
 
@@ -2590,11 +2518,8 @@ class NfseDesktop(tk.Tk):
         tabela = ui.Tabela(moldura.interior, colunas_de_notas(),
                            ao_abrir=lambda identidade: self._details((identidade,)))
         tabela.pack(fill="both", expand=True)
-        tabela.mostrar([
-            linha_da_nota(doc, self.prestador_do_doc,
-                          ocultar_valores=self._valores_ocultos)
-            for doc in docs
-        ])
+        tabela.mostrar([linha_da_nota(doc, self.prestador_do_doc)
+                        for doc in docs])
 
     def show_documents(self, situacao: str = "") -> None:
         """A lista de notas. `situacao` abre já filtrada por ela."""
@@ -3424,17 +3349,11 @@ class NfseDesktop(tk.Tk):
              self._reler_portal),
             ("Trocar de empresa", "Sai e volta à tela de entrada", self.sair),
         ))
-        self._bloco_de_acoes(direita, "Marca", (
-            ("Usar meu logotipo…", "Um PNG seu no lugar do desenho",
-             self._trocar_logotipo),
-            ("Exportar a marca…", "Salva o símbolo em PNG", self._exportar_marca),
-        ))
         # A versão aparece aqui de propósito: quem dá suporte precisa saber o
         # que está rodando na máquina sem pedir para abrir arquivo nenhum.
         self._bloco_de_acoes(direita, "Programa", (
             ("Procurar atualização", f"Versão {updater.VERSAO_ATUAL}",
              self._procurar_atualizacao),
-            ("Diário do programa…", "O que aconteceu, e quando", self._abrir_registro),
             ("Sobre", f"{marca.ASSINATURA} · NFS-e", self._about),
         ))
 
@@ -3743,19 +3662,6 @@ class ViewDocumentos(tk.Frame):
             # Com respiro, como a busca: sem ele, cada dígito de "29/08/2026"
             # disparava um redesenho — dez redesenhos para uma data.
             variavel.trace_add("write", lambda *_a: self._adiar_atualizacao())
-
-        # O mesmo cartão dos outros, e agora dizendo o que faz: o "R$" sozinho
-        # não contava que era o botão de esconder os valores da tela.
-        self.cartao_olho = ui.Redondo(barra, raio=10, fundo=ui.SURFACE,
-                                      borda=ui.BORDER_FORTE, padx=ui.E3, pady=7,
-                                      cursor="hand2")
-        self.cartao_olho.pack(side="left", padx=(ui.E2, 0))
-        self.olho = tk.Label(self.cartao_olho.interior, text="R$  À VISTA",
-                             font=ui.ETIQUETA, bg=ui.SURFACE, fg=ui.INK_2,
-                             cursor="hand2")
-        self.olho.pack()
-        for alvo in (self.cartao_olho, self.olho):
-            alvo.bind("<Button-1>", lambda _e: self._alternar_valores())
 
         # As ações da tela ficam na mesma linha dos filtros: uma fileira de
         # botões sozinha no alto era uma faixa inteira sem função.
@@ -4149,8 +4055,6 @@ class ViewDocumentos(tk.Frame):
         return sorted(escolhidas, key=comparar, reverse=not crescente)
 
     def _dinheiro(self, soma: Decimal) -> str:
-        if self.app._valores_ocultos:
-            return "R$ •••"
         return f"R$ {validation.format_money(soma)}"
 
     # ------------------------------------------------------------------ #
@@ -4176,14 +4080,6 @@ class ViewDocumentos(tk.Frame):
         self.situacao = "" if self.situacao == chave else chave
         self.atualizar()
 
-    def _alternar_valores(self) -> None:
-        self.app._valores_ocultos = not self.app._valores_ocultos
-        oculto = self.app._valores_ocultos
-        self.olho.configure(text="•••  OCULTOS" if oculto else "R$  À VISTA",
-                            fg=ui.PRIMARIA if oculto else ui.INK_2)
-        self.cartao_olho.pintar(borda=ui.PRIMARIA if oculto else ui.BORDER_FORTE)
-        self.atualizar()
-
     # ------------------------------------------------------------------ #
     # Atualização — acontece a cada filtro
     # ------------------------------------------------------------------ #
@@ -4203,11 +4099,8 @@ class ViewDocumentos(tk.Frame):
 
         visiveis = (base if not self.situacao
                     else [d for d in base if d.get("status") == self.situacao])
-        self.tabela.mostrar([
-            linha_da_nota(doc, self._prestador,
-                          ocultar_valores=self.app._valores_ocultos)
-            for doc in visiveis
-        ])
+        self.tabela.mostrar([linha_da_nota(doc, self._prestador)
+                             for doc in visiveis])
         # Trocar as linhas pode apagar a seleção; a explicação da nota que
         # sumiu não pode continuar na tela falando de outra coisa.
         self.selecionada = self.tabela.marcada

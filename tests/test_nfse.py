@@ -4123,15 +4123,6 @@ class AtualizarNoLugarTests(unittest.TestCase):
         self.assertEqual(len(self._visiveis(tabela)), 1)
         self.assertEqual([str(linha) for linha in tabela._linhas], criadas)
 
-    def test_esconder_valores_chega_na_tabela(self):
-        tabela = self._tabela()
-        tabela.pack()
-        tabela.mostrar([desktop.linha_da_nota(self._nota("a"), lambda d: "X",
-                                              ocultar_valores=True)])
-        self.raiz.update_idletasks()
-        valor = tabela._linhas[0].partes["valor"]["valor"]
-        self.assertEqual(str(valor.cget("text")), "•••")
-
     def test_o_simbolo_de_moeda_fica_mais_leve_que_o_numero(self):
         # Convenção de tabela financeira: o R$ não disputa atenção com o valor.
         tabela = self._tabela()

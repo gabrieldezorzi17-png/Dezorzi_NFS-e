@@ -76,9 +76,9 @@ O programa mantém um diário do que fez, em data\registro.txt. Ele registra as
 emissões, a abertura do layout de impressão, a chegada do PDF e qualquer erro —
 sem senha, sem dado sigiloso, para poder ser enviado sem receio.
 
-Pelo programa: menu Ajuda > Diário do programa.
-
-Se uma nota sair e o PDF não aparecer, é esse arquivo que diz o motivo.
+Se uma nota sair e o PDF não aparecer, é esse arquivo que diz o motivo. Ele
+se abre em qualquer editor de texto — para chegar até ele, tecla Windows + R,
+%LOCALAPPDATA% e Enter.
 
 SE O WINDOWS RECLAMAR
 ---------------------
