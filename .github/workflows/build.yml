@@ -51,8 +51,25 @@ jobs:
         shell: bash
 
       - name: Rodar os testes
-        run: python -m unittest tests.test_nfse -q
         shell: bash
+        run: |
+          # O log completo desta execução só é visível para quem tem acesso ao
+          # repositório. As ANOTAÇÕES aparecem na página pública, então o que
+          # falhou é repetido como anotação — é o que permite entender uma
+          # quebra na nuvem sem precisar entrar na conta.
+          set +e
+          python -m unittest tests.test_nfse -q > testes.log 2>&1
+          codigo=$?
+          set -e
+          if [ "$codigo" -ne 0 ]; then
+            grep -E "^(FAIL|ERROR):|^[A-Za-z_.]*Error:|^AssertionError" testes.log \
+              | head -25 \
+              | while IFS= read -r linha; do echo "::error::$linha"; done
+            echo "----- fim do log -----"
+            tail -60 testes.log
+            exit "$codigo"
+          fi
+          tail -3 testes.log
 
       - name: Compilar o arquivo único
         run: python empacotar.py --unico
