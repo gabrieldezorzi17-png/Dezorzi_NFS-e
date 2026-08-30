@@ -530,6 +530,18 @@ class Assistente:
 
     # -- desenho --------------------------------------------------------- #
 
+    # Largura fixa, altura conforme o passo. Sem fixar, cada passo pedia uma
+    # largura diferente e a janela pulava de tamanho entre uma tela e outra —
+    # e o texto do passo seguinte saía cortado na moldura do anterior.
+    LARGURA = 520
+
+    def _ajustar(self) -> None:
+        """Refaz a altura da janela para o que o passo atual precisa."""
+        self.janela.update_idletasks()
+        self.ui.centralizar(self.janela, self.ui.px(self.LARGURA),
+                            self.janela.winfo_reqheight())
+        self.janela.update_idletasks()
+
     def _montar(self) -> None:
         tk, ui = self.tk, self.ui
         self.corpo = tk.Frame(self.janela, bg=ui.BG, padx=ui.E6, pady=ui.E5)
@@ -584,7 +596,7 @@ class Assistente:
 
         self.aviso = tk.Label(
             self.dentro, bg=ui.SURFACE, fg=ui.INK_3, font=ui.MICRO,
-            justify="left", anchor="w", wraplength=ui.px(430),
+            justify="left", anchor="w", wraplength=ui.px(396),
             text="As notas emitidas e os ajustes ficam nesta pasta, fora da "
                  "parte que a atualização troca — atualizar não apaga nada.")
         self.aviso.pack(fill="x", pady=(ui.E2, ui.E4))
@@ -605,6 +617,7 @@ class Assistente:
                                                      padx=(0, ui.E2))
         self.destino.trace_add("write", lambda *_: self._conferir())
         self._conferir()
+        self._ajustar()
         campo.focus_set()
 
     def _procurar(self) -> None:
@@ -661,7 +674,7 @@ class Assistente:
         recado = tk.Label(faixa, text="Copiando os arquivos…", bg=ui.SURFACE,
                           fg=ui.INK, font=ui.CORPO)
         recado.pack(side="left")
-        self.janela.update()
+        self._ajustar()
 
         try:
             exe = instalar(raiz)
@@ -694,7 +707,7 @@ class Assistente:
                 f"O programa está em {exe.parent}.")
         tk.Label(self.dentro, text=onde + " Abrir daqui em diante leva menos "
                  "de um segundo.", bg=ui.SURFACE, fg=ui.INK_2, font=ui.PEQUENO,
-                 justify="left", anchor="w", wraplength=ui.px(430)).pack(
+                 justify="left", anchor="w", wraplength=ui.px(396)).pack(
             fill="x", pady=(ui.E2, ui.E5))
 
         botoes = tk.Frame(self.dentro, bg=ui.SURFACE)
@@ -704,6 +717,7 @@ class Assistente:
         ttk.Button(botoes, text="Fechar", style="Discreto.TButton",
                    command=self.janela.destroy).pack(side="right",
                                                      padx=(0, ui.E2))
+        self._ajustar()
 
     def _abrir_e_sair(self) -> None:
         if self.instalado is not None:
@@ -719,10 +733,11 @@ class Assistente:
                  fg=ui.ERRO, font=(ui.FAMILIA, 14, "bold")).pack(anchor="w")
         tk.Label(self.dentro, text=f"{type(exc).__name__}: {exc}",
                  bg=ui.SURFACE, fg=ui.INK_2, font=ui.PEQUENO, justify="left",
-                 anchor="w", wraplength=ui.px(430)).pack(fill="x",
+                 anchor="w", wraplength=ui.px(396)).pack(fill="x",
                                                          pady=(ui.E2, ui.E4))
         ttk.Button(self.dentro, text="Tentar de novo", style="Discreto.TButton",
                    command=self._passo_escolha).pack(anchor="e")
+        self._ajustar()
 
 
 # --------------------------------------------------------------------------- #
@@ -779,8 +794,7 @@ def main(argumentos: list[str] | None = None) -> int:
     assistente = Assistente(janela, versao_que_carrego() or "")
     if destino:
         assistente.destino.set(destino)
-    janela.update_idletasks()
-    ui.centralizar(janela, janela.winfo_reqwidth(), janela.winfo_reqheight())
+    assistente._ajustar()
     try:
         ui.pintar_barra_de_titulo(janela, escuro=True, cor=ui.NAVY)
     except Exception:
