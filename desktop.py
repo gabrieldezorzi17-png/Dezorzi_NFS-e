@@ -2148,15 +2148,16 @@ class NfseDesktop(tk.Tk):
         threading.Thread(target=trabalho, daemon=True).start()
 
     def _oferecer_atualizacao(self, nova) -> None:
-        """Avisa que há versão nova e pergunta se troca agora.
+        """Baixa e aplica a versão nova, sem perguntar nada.
 
-        Pergunta, não faz: a troca reinicia o programa, e reiniciar sozinho no
-        meio de uma emissão perde a nota que estava sendo digitada.
+        Sem perguntar porque isto roda na ABERTURA, e na abertura não existe
+        nota digitada para se perder — a pessoa acabou de abrir o programa.
+        Perguntar ali seria só um botão entre ela e o trabalho, e a resposta
+        seria sempre a mesma.
 
-        No formato de pasta não há troca automática — o `.exe` não anda sem o
-        `_internal/` ao lado, e trocar só um dos dois deixaria os arquivos de
-        versões diferentes, que quebra de um jeito difícil de entender. Ali o
-        aviso é só aviso.
+        No formato de pasta não há troca automática: o `.exe` não anda sem o
+        `_internal/` do lado, e trocar só um deixaria os dois em versões
+        diferentes — quebra difícil de entender. Ali o aviso é só aviso.
         """
         if updater.formato() != "unico":
             self._info(
@@ -2167,82 +2168,117 @@ class NfseDesktop(tk.Tk):
             )
             return
 
-        janela, corpo, rodape = self._modal("Atualização disponível", 520)
-        tk.Label(corpo, text=f"Versão {nova.versao}", bg=ui.SURFACE, fg=ui.INK,
-                 font=ui.TITULO).pack(anchor="w")
-        tk.Label(corpo, text=f"Você está na {updater.VERSAO_ATUAL}.",
-                 bg=ui.SURFACE, fg=ui.INK_2, font=ui.PEQUENO).pack(anchor="w",
-                                                                   pady=(2, ui.E3))
-        if nova.notas:
-            tk.Label(corpo, text=nova.notas, bg=ui.SURFACE, fg=ui.INK_2,
-                     font=ui.PEQUENO, justify="left", wraplength=440,
-                     anchor="w").pack(fill="x", pady=(0, ui.E3))
-        tk.Label(corpo,
-                 text="O programa fecha, troca o arquivo e abre de novo — "
-                      "leva alguns segundos.",
-                 bg=ui.SURFACE, fg=ui.INK_3, font=ui.MICRO, justify="left",
-                 wraplength=440, anchor="w").pack(fill="x")
+        janela = tk.Toplevel(self)
+        janela.title("Atualizando")
+        janela.configure(bg=ui.SURFACE)
+        janela.resizable(False, False)
+        janela.transient(self)
+        # Sem o X: fechar no meio do download deixaria um arquivo pela metade
+        # e nenhuma explicação. A saída é o botão que aparece adiante.
+        janela.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        andamento = tk.Label(corpo, text="", bg=ui.SURFACE, fg=ui.INK_3,
-                             font=ui.PEQUENO, anchor="w")
-        andamento.pack(fill="x", pady=(ui.E3, 0))
+        corpo = tk.Frame(janela, bg=ui.SURFACE, padx=ui.E6, pady=ui.E5)
+        corpo.pack(fill="both", expand=True)
+        tk.Label(corpo, text=f"Atualizando para a versão {nova.versao}",
+                 bg=ui.SURFACE, fg=ui.INK, font=ui.TITULO).pack(anchor="w")
+        tk.Label(corpo, text="O programa vai fechar e abrir de novo sozinho. "
+                             "Suas notas e configurações continuam onde estão.",
+                 bg=ui.SURFACE, fg=ui.INK_2, font=ui.PEQUENO, justify="left",
+                 wraplength=420).pack(anchor="w", pady=(ui.E2, ui.E4))
+        andamento = tk.Label(corpo, text="Baixando…", bg=ui.SURFACE,
+                             fg=ui.INK_3, font=ui.PEQUENO, anchor="w")
+        andamento.pack(fill="x")
+        barra = ui.Redondo(corpo, raio=5, fundo=ui.SURFACE_ALT,
+                           borda=ui.BORDER, padx=0, pady=0, height=10)
+        barra.pack(fill="x", pady=(ui.E2, 0))
+        preenchida = tk.Frame(barra.interior, bg=ui.PRIMARIA, height=6)
+        preenchida.place(x=0, y=0, relwidth=0, relheight=1)
 
-        depois = ttk.Button(rodape, text="Depois", command=janela.destroy)
-        depois.pack(side="right")
-        agora = ttk.Button(rodape, text="Atualizar e reiniciar",
-                           style="Primaria.TButton")
-        agora.pack(side="right", padx=(0, ui.E2))
+        rodape = tk.Frame(corpo, bg=ui.SURFACE)
+        rodape.pack(fill="x", pady=(ui.E4, 0))
+        escapar = ttk.Button(rodape, text="Continuar sem atualizar")
 
-        def baixar() -> None:
-            agora.state(["disabled"])
-            depois.state(["disabled"])
-            # A emissão fica fora do ar enquanto isso: o programa vai fechar,
-            # e uma nota começada agora se perderia na reinicialização.
-            self._set_busy(True)
-            andamento.configure(text="Baixando atualização…", fg=ui.INK_2)
+        # Enquanto isso a janela principal fica travada: começar a digitar uma
+        # nota que vai se perder no reinício seria pior que esperar.
+        self._set_busy(True)
+        janela.grab_set()
 
-            def contar(feito: int, total: int) -> None:
+        estado = {"desistiu": False}
+
+        def desistir() -> None:
+            estado["desistiu"] = True
+            self._set_busy(False)
+            if janela.winfo_exists():
+                janela.grab_release()
+                janela.destroy()
+            self._info("Atualização adiada",
+                       f"O programa segue na versão {updater.VERSAO_ATUAL}. "
+                       "Ele tenta de novo na próxima vez que abrir.")
+
+        escapar.configure(command=desistir)
+
+        def oferecer_saida() -> None:
+            # Só depois de um tempo: numa conexão normal o download termina
+            # antes, e o botão nem chega a aparecer.
+            if janela.winfo_exists() and not estado["desistiu"]:
+                escapar.pack(side="right")
+
+        janela.after(45_000, oferecer_saida)
+
+        def contar(feito: int, total: int) -> None:
+            def mostrar() -> None:
+                if not janela.winfo_exists() or estado["desistiu"]:
+                    return
                 if total > 0:
-                    texto_ = f"Baixando… {feito * 100 // total}%"
+                    fracao = min(1.0, feito / total)
+                    preenchida.place_configure(relwidth=fracao)
+                    andamento.configure(text=f"Baixando… {int(fracao * 100)}%")
                 else:
-                    texto_ = f"Baixando… {feito / 1024 / 1024:.1f} MB"
-                self._na_interface(lambda: andamento.winfo_exists()
-                                   and andamento.configure(text=texto_))
+                    andamento.configure(
+                        text=f"Baixando… {feito / 1024 / 1024:.1f} MB")
 
-            def trabalho() -> None:
-                try:
-                    arquivo = updater.baixar(nova, progresso=contar)
-                except Exception as exc:
-                    registro.falha("download da atualizacao", exc)
-                    mensagem = str(exc)
-                    self._na_interface(lambda: falhou(mensagem))
-                    return
-                self._na_interface(lambda: trocar(arquivo))
+            self._na_interface(mostrar)
 
-            def falhou(mensagem: str) -> None:
-                self._set_busy(False)
-                if janela.winfo_exists():
-                    janela.destroy()
-                self._erro("A atualização não veio",
-                           f"{mensagem}\n\nO programa continua na "
-                           f"{updater.VERSAO_ATUAL}; nada foi trocado.")
+        def falhou(mensagem: str) -> None:
+            if estado["desistiu"]:
+                return
+            self._set_busy(False)
+            if janela.winfo_exists():
+                janela.grab_release()
+                janela.destroy()
+            # Falha de atualização não pode impedir ninguém de emitir: o aviso
+            # é discreto e o programa continua funcionando como estava.
+            self._alerta("A atualização não veio",
+                         f"{mensagem}  O programa segue na versão "
+                         f"{updater.VERSAO_ATUAL}.")
 
-            def trocar(arquivo) -> None:
-                try:
-                    updater.aplicar_atualizacao(arquivo)
-                except Exception as exc:
-                    registro.falha("troca do executavel", exc)
-                    falhou(str(exc))
-                    return
-                if janela.winfo_exists():
-                    janela.destroy()
-                self.destroy()
-                sys.exit(0)
+        def trocar(arquivo) -> None:
+            if estado["desistiu"]:
+                return
+            try:
+                updater.aplicar_atualizacao(arquivo)
+            except Exception as exc:
+                registro.falha("troca do executavel", exc)
+                falhou(str(exc))
+                return
+            if janela.winfo_exists():
+                andamento.configure(text="Reabrindo o programa…")
+                janela.update_idletasks()
+            self.destroy()
+            sys.exit(0)
 
-            threading.Thread(target=trabalho, daemon=True).start()
+        def trabalho() -> None:
+            try:
+                arquivo = updater.baixar(nova, progresso=contar)
+            except Exception as exc:
+                registro.falha("download da atualizacao", exc)
+                mensagem = str(exc)
+                self._na_interface(lambda: falhou(mensagem))
+                return
+            self._na_interface(lambda: trocar(arquivo))
 
-        agora.configure(command=baixar)
-        self._dimensionar_modal(janela)
+        threading.Thread(target=trabalho, daemon=True).start()
+        ui.dimensionar(janela, 480)
 
     def _modal(self, titulo: str, largura: int) -> tuple[tk.Toplevel, tk.Frame, tk.Frame]:
         """Janela modal com rodapé garantido.

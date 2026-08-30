@@ -4876,3 +4876,110 @@ class PublicacaoNaNuvemTests(unittest.TestCase):
                                           "action-gh-release")]
         self.assertEqual(ordem, sorted(ordem),
                          "a conferência tem de vir antes de compilar e publicar")
+
+
+class PastaDoArquivoUnicoTests(unittest.TestCase):
+    """Onde o executável de arquivo único guarda os dados.
+
+    Antes era ao lado do .exe, e isso obrigava quem recebe o programa a se
+    importar com onde ele fica: largado na Área de Trabalho, criava três
+    pastas na Área de Trabalho da pessoa.
+    """
+
+    def setUp(self):
+        self.frozen = getattr(sys, "frozen", None)
+        self.executable = sys.executable
+        self.meipass = getattr(sys, "_MEIPASS", None)
+        self.local = os.environ.get("LOCALAPPDATA")
+
+    def tearDown(self):
+        if self.frozen is None:
+            if hasattr(sys, "frozen"):
+                del sys.frozen
+        else:
+            sys.frozen = self.frozen
+        if self.meipass is None:
+            if hasattr(sys, "_MEIPASS"):
+                del sys._MEIPASS
+        else:
+            sys._MEIPASS = self.meipass
+        sys.executable = self.executable
+        if self.local is None:
+            os.environ.pop("LOCALAPPDATA", None)
+        else:
+            os.environ["LOCALAPPDATA"] = self.local
+
+    def _fingir(self, *, exe: pathlib.Path, unico: bool):
+        sys.frozen = True
+        sys.executable = str(exe)
+        # Arquivo único: o PyInstaller descompacta longe do .exe.
+        # Pasta: o `_internal/` fica do lado.
+        sys._MEIPASS = (str(pathlib.Path(tempfile.mkdtemp()).resolve())
+                        if unico else str(exe.parent / "_internal"))
+
+    def test_arquivo_unico_guarda_no_appdata(self):
+        with tempfile.TemporaryDirectory() as area, \
+             tempfile.TemporaryDirectory() as appdata:
+            mesa = pathlib.Path(area).resolve()      # a "Área de Trabalho"
+            os.environ["LOCALAPPDATA"] = str(pathlib.Path(appdata).resolve())
+            self._fingir(exe=mesa / "Dezorzi NFS-e.exe", unico=True)
+            raiz = paths._raiz()
+            self.assertEqual(raiz,
+                             pathlib.Path(appdata).resolve() / "Dezorzi NFS-e")
+            self.assertNotEqual(raiz, mesa,
+                                "não pode sujar a pasta onde o .exe está")
+
+    def test_formato_pasta_continua_ao_lado_do_exe(self):
+        # Nesse formato o config/ e as notas à vista são o ponto: quem usa a
+        # pasta a copia inteira, com dados e tudo.
+        with tempfile.TemporaryDirectory() as programa:
+            base = pathlib.Path(programa).resolve()
+            self._fingir(exe=base / "Dezorzi NFS-e.exe", unico=False)
+            self.assertEqual(paths._raiz(), base)
+
+    def test_instalacao_que_ja_existe_nao_e_movida(self):
+        """Havendo dados ao lado do .exe, é ali que o programa continua.
+
+        Trocar o lugar debaixo de quem já usa faria as notas sumirem da tela
+        sem nenhuma explicação.
+        """
+        with tempfile.TemporaryDirectory() as antigo, \
+             tempfile.TemporaryDirectory() as appdata:
+            base = pathlib.Path(antigo).resolve()
+            (base / "data").mkdir()
+            os.environ["LOCALAPPDATA"] = str(pathlib.Path(appdata).resolve())
+            self._fingir(exe=base / "Dezorzi NFS-e.exe", unico=True)
+            self.assertEqual(paths._raiz(), base)
+
+    def test_um_env_ao_lado_tambem_segura_a_instalacao(self):
+        with tempfile.TemporaryDirectory() as antigo, \
+             tempfile.TemporaryDirectory() as appdata:
+            base = pathlib.Path(antigo).resolve()
+            (base / ".env").write_text("NFSE_TEMA=escuro\n", encoding="utf-8")
+            os.environ["LOCALAPPDATA"] = str(pathlib.Path(appdata).resolve())
+            self._fingir(exe=base / "Dezorzi NFS-e.exe", unico=True)
+            self.assertEqual(paths._raiz(), base)
+
+    def test_solto_no_codigo_nao_muda_nada(self):
+        if hasattr(sys, "frozen"):
+            del sys.frozen
+        self.assertEqual(paths._raiz(),
+                         pathlib.Path(paths.__file__).resolve().parent)
+
+    def test_sem_localappdata_cai_na_pasta_do_usuario(self):
+        # Windows sempre define, mas um ambiente enxuto pode não ter.
+        with tempfile.TemporaryDirectory() as area:
+            os.environ.pop("LOCALAPPDATA", None)
+            self._fingir(exe=pathlib.Path(area).resolve() / "x.exe", unico=True)
+            self.assertEqual(paths._raiz(), pathlib.Path.home() / "Dezorzi NFS-e")
+
+    def test_mover_o_exe_nao_perde_as_notas(self):
+        """O .exe pode mudar de pasta; os dados ficam onde estavam."""
+        with tempfile.TemporaryDirectory() as um, \
+             tempfile.TemporaryDirectory() as outro, \
+             tempfile.TemporaryDirectory() as appdata:
+            os.environ["LOCALAPPDATA"] = str(pathlib.Path(appdata).resolve())
+            self._fingir(exe=pathlib.Path(um).resolve() / "app.exe", unico=True)
+            primeira = paths._raiz()
+            self._fingir(exe=pathlib.Path(outro).resolve() / "app.exe", unico=True)
+            self.assertEqual(paths._raiz(), primeira)

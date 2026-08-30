@@ -16,11 +16,51 @@ import sys
 from pathlib import Path
 
 
+def _arquivo_unico() -> bool:
+    """É o executável de arquivo único, e não o de pasta?
+
+    No arquivo único o PyInstaller descompacta o programa numa pasta
+    temporária, então ``sys._MEIPASS`` fica longe do .exe. No de pasta ele é o
+    ``_internal/`` que está do lado.
+    """
+    interno = getattr(sys, "_MEIPASS", "")
+    if not interno:
+        return False
+    return Path(interno).parent != Path(sys.executable).resolve().parent
+
+
+def _pasta_do_usuario() -> Path:
+    """A pasta de dados do usuário no Windows — %LOCALAPPDATA%."""
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home())
+    return Path(base) / "Dezorzi NFS-e"
+
+
 def _raiz() -> Path:
-    """A pasta do programa: onde ficam o .env, o config/ e as notas."""
-    if getattr(sys, "frozen", False):          # rodando como .exe
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent
+    """A pasta do programa: onde ficam o .env, o config/ e as notas.
+
+    Rodando solto, é a pasta do código. Como executável, depende do formato:
+
+    - **pasta**: ao lado do .exe, que é o ponto desse formato — o config/ e as
+      notas ficam à vista, para abrir e copiar.
+    - **arquivo único**: em %LOCALAPPDATA%. Antes era ao lado do .exe também,
+      e isso obrigava quem recebe o programa a se importar com ONDE ele fica:
+      largado na Área de Trabalho, o programa criava `config/`, `data/` e
+      `.env` na Área de Trabalho da pessoa. Agora o .exe pode ficar em
+      qualquer lugar — inclusive ser movido depois — que os dados continuam
+      onde estão.
+
+    Instalação que já existe não se move: havendo `data/` ou `.env` ao lado do
+    .exe, é ali que o programa continua. Trocar o lugar debaixo de quem já usa
+    seria fazer as notas sumirem da tela sem explicação.
+    """
+    if not getattr(sys, "frozen", False):
+        return Path(__file__).resolve().parent
+    ao_lado = Path(sys.executable).resolve().parent
+    if not _arquivo_unico():
+        return ao_lado
+    if (ao_lado / "data").is_dir() or (ao_lado / ".env").is_file():
+        return ao_lado
+    return _pasta_do_usuario()
 
 
 def _embutidos() -> Path:
