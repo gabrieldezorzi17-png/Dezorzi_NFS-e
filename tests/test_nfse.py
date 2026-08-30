@@ -5521,3 +5521,113 @@ class CursorHonestoTests(unittest.TestCase):
         rotulos = [w for w in campo.winfo_children() if isinstance(w, tk.Label)]
         self.assertTrue(rotulos, "a dica não foi criada")
         self.assertEqual(str(rotulos[0].cget("cursor")), "xterm")
+
+
+class MisturaDeCoresTests(unittest.TestCase):
+    """A cor a meio caminho — o que falta ao Tk para ter transição."""
+
+    def test_nas_pontas_devolve_as_proprias_cores(self):
+        self.assertEqual(ui.misturar("#000000", "#ffffff", 0.0), "#000000")
+        self.assertEqual(ui.misturar("#000000", "#ffffff", 1.0), "#ffffff")
+
+    def test_no_meio_fica_no_meio(self):
+        self.assertEqual(ui.misturar("#000000", "#ffffff", 0.5), "#808080")
+
+    def test_fracao_fora_do_intervalo_nao_estoura(self):
+        self.assertEqual(ui.misturar("#000000", "#ffffff", -3), "#000000")
+        self.assertEqual(ui.misturar("#000000", "#ffffff", 9), "#ffffff")
+
+    def test_cor_invalida_devolve_o_destino(self):
+        # Melhor chegar de uma vez que derrubar a tela por causa de um realce.
+        self.assertEqual(ui.misturar("nao e cor", "#123456", 0.5), "#123456")
+
+    def test_caminha_sempre_para_o_destino(self):
+        anterior = None
+        for passo in range(0, 11):
+            atual = ui.misturar("#101010", "#f0f0f0", passo / 10)
+            valor = int(atual[1:3], 16)
+            if anterior is not None:
+                self.assertGreaterEqual(valor, anterior)
+            anterior = valor
+
+
+class RealceDoCartaoTests(unittest.TestCase):
+    """O cartão esmaece ao receber o mouse, em vez de saltar de cor."""
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+            self.raiz.geometry("400x200")
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+        self.cartao = ui.CartaoFiltro(self.raiz, "Emitidas", tom="sucesso",
+                                      ao_clicar=lambda: None)
+        self.cartao.atualizar("4", "no portal", ativo=False)
+        self.cartao.pack()
+        for _ in range(10):
+            self.raiz.update()
+            time.sleep(0.02)
+
+    def tearDown(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    def test_a_cor_passa_por_valores_intermediarios(self):
+        """Saltar direto seria o comportamento antigo."""
+        partida = self.cartao._fundo_agora
+        vistos = set()
+        self.cartao.event_generate("<Enter>")
+        fim = time.time() + 1.0
+        while time.time() < fim:
+            self.raiz.update()
+            vistos.add(self.cartao._fundo_agora)
+            if self.cartao._realce is None and len(vistos) > 1:
+                break
+            time.sleep(0.01)
+        intermediarias = vistos - {partida, ui.SURFACE_ALT}
+        self.assertTrue(intermediarias,
+                        f"foi direto de {partida} ao destino: {vistos}")
+
+    def test_chega_ao_destino(self):
+        self.cartao.event_generate("<Enter>")
+        fim = time.time() + 1.5
+        while time.time() < fim and self.cartao._realce is not None:
+            self.raiz.update()
+            time.sleep(0.01)
+        self.assertEqual(self.cartao._fundo_agora, ui.SURFACE_ALT)
+
+    def test_sair_volta_ao_repouso(self):
+        self.cartao.event_generate("<Enter>")
+        fim = time.time() + 1.5
+        while time.time() < fim and self.cartao._realce is not None:
+            self.raiz.update()
+            time.sleep(0.01)
+        self.cartao.event_generate("<Leave>")
+        fim = time.time() + 1.5
+        while time.time() < fim and self.cartao._realce is not None:
+            self.raiz.update()
+            time.sleep(0.01)
+        self.assertEqual(self.cartao._fundo_agora, ui.SURFACE)
+
+    def test_entrar_e_sair_depressa_nao_deixa_animacao_solta(self):
+        """Passar o mouse correndo não pode deixar quadros pendurados."""
+        for _ in range(6):
+            self.cartao.event_generate("<Enter>")
+            self.raiz.update()
+            self.cartao.event_generate("<Leave>")
+            self.raiz.update()
+        fim = time.time() + 2.0
+        while time.time() < fim and self.cartao._realce is not None:
+            self.raiz.update()
+            time.sleep(0.01)
+        self.assertIsNone(self.cartao._realce, "sobrou animação rodando")
+        self.assertEqual(self.cartao._fundo_agora, ui.SURFACE)
+
+    def test_a_linha_da_tabela_continua_instantanea(self):
+        """Em lista que se percorre rápido, esmaecer vira rastro."""
+        self.assertFalse(hasattr(ui.Linha, "_esmaecer"))

@@ -916,6 +916,33 @@ def dica(widget: tk.Widget, texto: str, *, espera: int = 450) -> None:
     widget.bind("<Destroy>", esconder, add="+")
 
 
+def atenuar(fracao: float) -> float:
+    """Curva de atenuação cúbica: sai devagar, acelera, chega devagar.
+
+    A mesma que as transições da web usam por padrão. Serve tanto ao
+    indicador da navegação quanto ao realce dos cartões.
+    """
+    if fracao < 0.5:
+        return 4 * fracao ** 3
+    return 1 - ((-2 * fracao + 2) ** 3) / 2
+
+
+def misturar(inicio: str, fim: str, fracao: float) -> str:
+    """A cor a meio caminho entre duas — o que falta ao Tk para transição.
+
+    No navegador, `transition` faz isso sozinho. Aqui a cor de cada quadro é
+    calculada e aplicada na mão, que é o preço de não ter folha de estilo.
+    """
+    try:
+        a = [int(inicio.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+        b = [int(fim.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    except (ValueError, IndexError):
+        return fim
+    fracao = max(0.0, min(1.0, fracao))
+    return "#%02x%02x%02x" % tuple(
+        round(x + (y - x) * fracao) for x, y in zip(a, b))
+
+
 def ponto(pai: tk.Widget, cor: str, *, fundo=None, lado: int = 10) -> tk.Canvas:
     """Bolinha colorida de status — o indicador de transmissão da barra lateral."""
     tela = tk.Canvas(pai, width=lado, height=lado, bg=fundo or SURFACE,
@@ -1192,20 +1219,11 @@ class Segmentado(tk.Canvas):
 
     DURACAO = 220        # milissegundos do trajeto inteiro
 
-    @staticmethod
-    def atenuar(fracao: float) -> float:
-        """Curva de atenuação: sai devagar, acelera, chega devagar.
-
-        É a *ease-in-out* cúbica — a mesma curva que as transições da web
-        usam por padrão. Substituiu uma mola exponencial (`anda 28% do que
-        falta a cada quadro`), que tinha dois defeitos: partia na velocidade
-        máxima, o que faz o movimento parecer um solavanco, e nunca chegava
-        ao destino — era preciso um corte arbitrário de 0,6px para dizer
-        "chegou". Aqui o trajeto tem começo, meio e fim declarados.
-        """
-        if fracao < 0.5:
-            return 4 * fracao ** 3
-        return 1 - ((-2 * fracao + 2) ** 3) / 2
+    # A curva mora no módulo: o realce dos cartões usa a mesma. Substituiu uma
+    # mola exponencial que partia na velocidade máxima — o que se lê como
+    # solavanco — e nunca chegava ao destino, precisando de um corte de 0,6px
+    # para declarar chegada.
+    atenuar = staticmethod(atenuar)
 
     def _deslizar(self) -> None:
         """Anda o indicador até o alvo, ao longo de `DURACAO`."""
@@ -1333,6 +1351,8 @@ class CartaoFiltro(Redondo):
                  ao_clicar: Callable[[], None] | None = None) -> None:
         self.cor = globals().get(TONS_DE_FILTRO.get(tom, "PRIMARIA"), PRIMARIA)
         self.ativo = False
+        self._realce = None
+        self._fundo_agora, self._borda_agora = SURFACE, BORDER
         # A mãozinha só aparece quando há mesmo o que clicar. Antes ela era
         # fixa, e no Painel — onde estes cartões não tinham função — ela
         # prometia uma resposta que não vinha. Cursor é promessa; promessa
@@ -1365,18 +1385,53 @@ class CartaoFiltro(Redondo):
 
     def _vestir(self, fundo: str, borda: str, tinta_titulo: str,
                 tinta_numero: str) -> None:
+        # Guardadas para o esmaecer saber de onde parte.
+        self._fundo_agora, self._borda_agora = fundo, borda
         self.pintar(fundo=fundo, borda=borda)
         self.titulo.configure(bg=fundo, fg=tinta_titulo)
         self.numero.configure(bg=fundo, fg=tinta_numero)
         self.detalhe.configure(bg=fundo, fg=tinta_titulo)
 
+    REALCE = 140         # milissegundos do esmaecer
+
     def _entrar(self, _evento=None) -> None:
         if not self.ativo:
-            self._vestir(SURFACE_ALT, self.cor, INK_3, self.cor)
+            self._esmaecer(SURFACE_ALT, self.cor)
 
     def _sair(self, _evento=None) -> None:
         if not self.ativo:
-            self._vestir(SURFACE, BORDER, INK_3, self.cor)
+            self._esmaecer(SURFACE, BORDER)
+
+    def _esmaecer(self, fundo: str, borda: str) -> None:
+        """Vai da cor atual até a de destino ao longo de `REALCE`.
+
+        Só nos cartões, de propósito. Na linha da tabela o realce continua
+        instantâneo: numa lista que se percorre depressa, a cor que demora a
+        chegar vira rastro atrás do ponteiro — ali o salto é a resposta certa.
+        """
+        if self._realce is not None:
+            try:
+                self.after_cancel(self._realce)
+            except tk.TclError:
+                pass
+            self._realce = None
+        partida = (self._fundo_agora, self._borda_agora)
+        destino = (fundo, borda)
+        if partida == destino:
+            return
+        comeco = time.monotonic()
+
+        def quadro() -> None:
+            if not self.winfo_exists():
+                return
+            fracao = min(1.0, (time.monotonic() - comeco) * 1000 / self.REALCE)
+            andado = atenuar(fracao)
+            self._vestir(misturar(partida[0], destino[0], andado),
+                         misturar(partida[1], destino[1], andado),
+                         INK_3, self.cor)
+            self._realce = None if fracao >= 1.0 else self.after(16, quadro)
+
+        quadro()
 
     # -- conteúdo -------------------------------------------------------- #
 
