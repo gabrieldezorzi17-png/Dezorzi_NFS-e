@@ -1007,12 +1007,7 @@ def icone_vetor(pai: tk.Widget, nome: str, *, cor: str, fundo: str,
         tela.create_line(x0 * u, y0 * u, x1 * u, y1 * u,
                          fill=cor, width=linha, capstyle="round")
 
-    if nome == "painel":
-        retangulo(3, 3, 10, 12)
-        retangulo(14, 3, 21, 8)
-        retangulo(14, 12, 21, 21)
-        retangulo(3, 16, 10, 21)
-    elif nome == "emitir":
+    if nome == "emitir":
         tela.create_oval(3 * u, 3 * u, 21 * u, 21 * u, outline=cor, width=linha)
         traco(12, 8, 12, 16)
         traco(8, 12, 16, 12)

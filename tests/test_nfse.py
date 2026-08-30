@@ -5631,3 +5631,128 @@ class RealceDoCartaoTests(unittest.TestCase):
     def test_a_linha_da_tabela_continua_instantanea(self):
         """Em lista que se percorre rápido, esmaecer vira rastro."""
         self.assertFalse(hasattr(ui.Linha, "_esmaecer"))
+
+
+class SemPainelTests(unittest.TestCase):
+    """O Painel saiu; o que era só dele tem de ter sobrevivido em outro lugar.
+
+    Ele mostrava contadores que a tela de Notas já mostra — e lá eles ainda
+    filtram a lista. Sobrava um passo entre abrir o programa e ver as notas.
+    A única coisa exclusiva dele era quanto cada login faturou, e é isso que
+    estes testes cobram na coluna de detalhe das Notas.
+    """
+
+    EMITIDAS = [
+        {"id": "1", "status": "submitted", "created_at": "2026-08-29",
+         "payload": {"prestador": {"razao_social": "ALFA LTDA"},
+                     "servico": {"valor": "100.00"}}},
+        {"id": "2", "status": "draft", "created_at": "2026-08-28",
+         "payload": {"prestador": {"razao_social": "ALFA LTDA"},
+                     "servico": {"valor": "900.00"}}},
+        {"id": "3", "status": "failed", "created_at": "2026-08-27",
+         "payload": {"prestador": {"razao_social": "BETA SA"},
+                     "servico": {"valor": "500.00"}}},
+    ]
+
+    def test_a_barra_nao_tem_mais_a_aba(self):
+        chaves = [chave for chave, _rotulo in desktop.BarraDeComando.SECOES]
+        self.assertNotIn("painel", chaves)
+        self.assertEqual(chaves, ["notas", "emitir", "ajustes"])
+
+    def test_a_tela_deixou_de_existir(self):
+        self.assertFalse(hasattr(desktop.NfseDesktop, "show_dashboard"))
+
+    def test_o_resumo_por_empresa_sobreviveu(self):
+        """Era o único conteúdo exclusivo do Painel."""
+        self.assertTrue(hasattr(desktop.NfseDesktop, "_resumo_por_empresa"))
+        self.assertTrue(hasattr(desktop.NfseDesktop, "_valor_da_nota"))
+
+    def test_o_faturado_conta_so_o_que_saiu(self):
+        """Rascunho e recusada não são faturamento."""
+        vista = desktop.ViewDocumentos.__new__(desktop.ViewDocumentos)
+        vista._pelo_topo = lambda: list(self.EMITIDAS)
+        self.assertEqual([doc["id"] for doc in vista._faturadas()], ["1"])
+
+    def test_o_faturado_obedece_ao_filtro(self):
+        """Quem restringiu a busca a um mês quer o faturamento daquele mês."""
+        vista = desktop.ViewDocumentos.__new__(desktop.ViewDocumentos)
+        vista._pelo_topo = lambda: []
+        self.assertEqual(vista._faturadas(), [])
+
+
+class ColunaDeDetalheVaziaTests(unittest.TestCase):
+    """Sem nota escolhida, a coluna mostra o faturado — não um convite sozinho."""
+
+    def setUp(self):
+        try:
+            self.app = desktop.NfseDesktop()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.app.withdraw()
+        self.original = storage.list_all
+        storage.list_all = lambda: [
+            {"id": "1", "status": "submitted", "created_at": "2026-08-29",
+             "nota": {"numero": "1", "codigo_verificacao": "A"},
+             "payload": {"prestador": {"razao_social": "ALFA LTDA",
+                                       "inscricao": "1"},
+                         "tomador": {"nome": "CLIENTE", "documento": "1"},
+                         "servico": {"descricao": "x", "valor": "1250.00"}}},
+        ]
+        self.addCleanup(self._restaurar)
+        self.app.show_documents()
+        self.app.update()
+
+    def _restaurar(self):
+        storage.list_all = self.original
+        try:
+            self.app.destroy()
+        except Exception:
+            pass
+
+    def _vista(self):
+        achados = []
+
+        def varrer(widget):
+            for filho in widget.winfo_children():
+                if isinstance(filho, desktop.ViewDocumentos):
+                    achados.append(filho)
+                varrer(filho)
+
+        varrer(self.app)
+        return achados[0]
+
+    def _rotulos(self, onde):
+        textos = []
+
+        def varrer(widget):
+            for filho in widget.winfo_children():
+                if isinstance(filho, tk.Label):
+                    textos.append(str(filho.cget("text")))
+                varrer(filho)
+
+        varrer(onde)
+        return textos
+
+    def test_mostra_quanto_cada_login_faturou(self):
+        vista = self._vista()
+        vista._selecionar(None)
+        self.app.update()
+        textos = self._rotulos(vista.coluna_detalhe)
+        self.assertTrue(any("faturado" in t for t in textos), textos)
+        self.assertTrue(any("ALFA" in t for t in textos), textos)
+
+    def test_o_convite_continua_ali(self):
+        """Quem nunca clicou numa linha ainda precisa ser avisado de que dá."""
+        vista = self._vista()
+        vista._selecionar(None)
+        self.app.update()
+        textos = self._rotulos(vista.coluna_detalhe)
+        self.assertTrue(any("Clique numa nota" in t for t in textos), textos)
+
+    def test_escolher_uma_nota_troca_o_resumo_pelo_detalhe(self):
+        vista = self._vista()
+        vista._selecionar("1")
+        self.app.update()
+        textos = self._rotulos(vista.coluna_detalhe)
+        self.assertFalse(any("faturado" in t for t in textos), textos)
+        self.assertTrue(any("CLIENTE" in t for t in textos), textos)

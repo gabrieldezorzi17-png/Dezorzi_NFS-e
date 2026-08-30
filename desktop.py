@@ -262,8 +262,10 @@ class BarraDeComando(tk.Frame):
     antigo — era a primeira coisa que se via, e a que menos mudava.
     """
 
-    SECOES = (("painel", "Painel"), ("notas", "Notas"),
-              ("emitir", "Emitir"), ("ajustes", "Ajustes"))
+    # Sem "Painel": ele mostrava contadores que a tela de Notas já mostra —
+    # e lá eles ainda filtram a lista. Era um passo a mais entre abrir o
+    # programa e ver as notas.
+    SECOES = (("notas", "Notas"), ("emitir", "Emitir"), ("ajustes", "Ajustes"))
 
     def __init__(self, pai: tk.Widget, app: "NfseDesktop") -> None:
         super().__init__(pai, bg=ui.NAVY, padx=ui.E5, pady=ui.E3)
@@ -340,7 +342,7 @@ class BarraDeComando(tk.Frame):
         self.navegacao.escolher(chave)
 
     def _escolher(self, chave: str) -> None:
-        telas = {"painel": self.app.show_dashboard, "notas": self.app.show_documents,
+        telas = {"notas": self.app.show_documents,
                  "emitir": self.app.show_new_note, "ajustes": self.app.show_settings}
         telas[chave]()
 
@@ -775,7 +777,6 @@ class NfseDesktop(tk.Tk):
         # Os avisos abertos foram desenhados com a paleta antiga.
         self.avisos.limpar()
         telas = {
-            "painel": self.show_dashboard,
             "emitir": self.show_new_note,
             "notas": self.show_documents,
             "config": self.show_settings,
@@ -904,7 +905,7 @@ class NfseDesktop(tk.Tk):
             entrar.configure(text="Entrar")
             self.empresa_logada = nome
             self._refresh_mode_label()
-            self.show_dashboard()
+            self.show_documents()
 
         def falhar(mensagem: str) -> None:
             entrar.state(["!disabled"])
@@ -947,55 +948,6 @@ class NfseDesktop(tk.Tk):
     # ------------------------------------------------------------------ #
     # Painel
     # ------------------------------------------------------------------ #
-
-    def show_dashboard(self) -> None:
-        self._clear()
-        self._mostrar_comando(True)
-        self._marcar_nav("painel")
-        acoes = self._title("Painel", "Visão geral da emissão de notas.")
-        ttk.Button(acoes, text="Emitir NFS-e", style="Primaria.TButton",
-                   command=self.show_new_note).pack()
-
-        docs = storage.list_all()
-        emitidas = [d for d in docs if d.get("status") == "submitted"]
-
-        medidores = tk.Frame(self.content, bg=ui.BG)
-        medidores.pack(fill="x", pady=(0, ui.E3))
-        # (o laço abaixo escreve nesta faixa)
-        indicadores = (
-            ("submitted", "Emitidas", len(emitidas), "no portal", "sucesso"),
-            ("draft", "Rascunhos", sum(1 for d in docs if d.get("status") == "draft"),
-             "aguardando revisão", "neutro"),
-            ("failed", "Recusadas", sum(1 for d in docs if d.get("status") == "failed"),
-             "precisam de atenção", "erro"),
-        )
-        for indice, (chave, titulo, quantos, detalhe, tom) in enumerate(indicadores):
-            # Clicar num contador leva à lista já filtrada por ele: é o que
-            # a pessoa quer depois de ver "3 recusadas" — ver quais são.
-            cartao = ui.CartaoFiltro(
-                medidores, titulo, tom=tom,
-                ao_clicar=lambda c=chave: self.show_documents(c))
-            cartao.atualizar(str(quantos), detalhe, ativo=False)
-            cartao.pack(side="left", expand=True, fill="both",
-                        padx=(0 if indice == 0 else ui.E2, 0))
-        faturado = ui.CartaoFiltro(medidores, "Faturado", tom="info")
-        faturado.atualizar(
-            f"R$ {validation.format_money(sum((self._valor_da_nota(d) for d in emitidas), Decimal('0')))}",
-            "somando as emitidas", ativo=False)
-        faturado.numero.configure(font=(ui.FAMILIA, 17, "bold"))
-        faturado.pack(side="left", expand=True, fill="both", padx=(ui.E2, 0))
-
-        status = service.describe_configuration()
-        if status["pending"]:
-            ui.banner(self.content, "Falta para conseguir emitir:",
-                      status["pending"], tom="alerta").pack(fill="x", pady=(0, ui.E3))
-
-        colunas = tk.Frame(self.content, bg=ui.BG)
-        colunas.pack(fill="both", expand=True)
-        esquerda, direita = self.duas_colunas(colunas)
-
-        self._documents_table(esquerda, docs[:8], actions=False)
-        self._resumo_por_empresa(direita, emitidas)
 
     @staticmethod
     def _valor_da_nota(doc: dict[str, Any]) -> Decimal:
@@ -1040,11 +992,16 @@ class NfseDesktop(tk.Tk):
         for quem, valor in sorted(por_empresa.items(), key=lambda item: -item[1]):
             linha = tk.Frame(corpo, bg=ui.SURFACE)
             linha.pack(fill="x", pady=(0, ui.E2))
-            tk.Label(linha, text=quem[:26], bg=ui.SURFACE, fg=ui.INK_2,
-                     font=ui.PEQUENO, anchor="w").pack(side="left", fill="x",
-                                                       expand=True)
             tk.Label(linha, text=f"R$ {validation.format_money(valor)}",
                      bg=ui.SURFACE, fg=ui.INK, font=(ui.MONO, 10)).pack(side="right")
+            nome = tk.Label(linha, bg=ui.SURFACE, fg=ui.INK_2, font=ui.PEQUENO,
+                            anchor="w")
+            nome.pack(side="left", fill="x", expand=True)
+            # Cortar no 26.o caractere deixava "INDUSTRIA" pendurado, sem sinal
+            # de que havia mais nome. A largura e fixa de proposito: a coluna
+            # tem tamanho proprio, e pedir mais que isso a faria roubar espaco
+            # da lista de notas.
+            ui.encurtar(nome, quem, 190)
 
     def _historico_lateral(self, onde: tk.Widget, quantas: int = 7) -> None:
         """As últimas notas que saíram, ao lado de quem está emitindo a próxima.
@@ -3823,18 +3780,15 @@ class ViewDocumentos(tk.Frame):
 
         doc = next((d for d in self.docs if d["id"] == self.selecionada), None)
         if doc is None:
-            vazio = ui.Redondo(self.coluna_detalhe, raio=14, fundo=ui.SURFACE,
-                               borda=ui.BORDER, padx=ui.E4, pady=ui.E6)
-            vazio.pack(fill="x")
-            ui.icone_vetor(vazio.interior, "notas", cor=ui.INK_3,
-                           fundo=ui.SURFACE, lado=30).pack(pady=(0, ui.E3))
-            tk.Label(vazio.interior, text="Nenhuma nota escolhida", bg=ui.SURFACE,
-                     fg=ui.INK_2, font=ui.CORPO_FORTE).pack()
-            tk.Label(vazio.interior,
-                     text="Clique numa linha para ver tudo sobre ela aqui —\n"
+            # Sem nota escolhida, a coluna mostra quanto cada login faturou —
+            # a única coisa que era exclusiva do Painel. Antes havia aqui um
+            # convite ocupando a altura inteira sem dizer nada de novo.
+            self.app._resumo_por_empresa(self.coluna_detalhe, self._faturadas())
+            tk.Label(self.coluna_detalhe,
+                     text="Clique numa nota para ver tudo sobre ela aqui — "
                           "inclusive por que foi recusada.",
-                     bg=ui.SURFACE, fg=ui.INK_3, font=ui.PEQUENO,
-                     justify="center").pack(pady=(ui.E2, 0))
+                     bg=ui.BG, fg=ui.INK_3, font=ui.MICRO, justify="left",
+                     wraplength=310, anchor="w").pack(fill="x", pady=(ui.E3, 0))
             return
 
         status = doc.get("status", "")
@@ -4004,6 +3958,14 @@ class ViewDocumentos(tk.Frame):
         if len(bruto) != 8:
             return ""
         return f"{bruto[4:]}-{bruto[2:4]}-{bruto[:2]}"
+
+    def _faturadas(self) -> list[dict[str, Any]]:
+        """As notas emitidas que estão à vista, com os filtros em vigor.
+
+        Do que está filtrado, e não de tudo: quem restringiu a busca a um mês
+        quer o faturamento daquele mês, não o de sempre.
+        """
+        return [doc for doc in self._pelo_topo() if doc.get("status") == "submitted"]
 
     def _ordenar_por(self, chave: str, crescente: bool) -> None:
         self.ordem = (chave, crescente)
