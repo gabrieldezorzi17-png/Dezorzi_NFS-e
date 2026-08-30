@@ -39,6 +39,18 @@ paths.CONFIG_DIR = Path(_sandbox.name) / "config"
 paths.REQUEST_TEMPLATE = paths.CONFIG_DIR / "request_template.json"
 paths.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
+# E nem na INSTALAÇÃO real. Três funções perguntam ao Windows onde fica a pasta
+# do usuário — `paths._pasta_do_usuario`, `updater.pasta_de_trabalho` e
+# `instalador.pasta_do_usuario` — e todas leem %LOCALAPPDATA% na hora de usar.
+# Apontando a variável para a caixa de areia, nenhum teste consegue escrever
+# na instalação de quem roda a suíte, esqueça alguém de redirecionar ou não.
+#
+# Não é hipótese: um teste da troca de executável escreveu o roteiro `.bat`
+# dentro da instalação de verdade desta máquina, e só apareceu quando fui
+# olhar por outro motivo.
+os.environ["LOCALAPPDATA"] = str(Path(_sandbox.name) / "AppDataLocal")
+Path(os.environ["LOCALAPPDATA"]).mkdir(parents=True, exist_ok=True)
+
 import cep  # noqa: E402
 import config  # noqa: E402
 import instalacao  # noqa: E402
@@ -6789,6 +6801,30 @@ class NomeQueApareceTests(unittest.TestCase):
 
     def test_o_atalho_antigo_esta_na_lista_de_recolher(self):
         self.assertIn("Dezorzi NFS-e", instalador.ATALHOS_ANTIGOS)
+
+
+class SuiteNaoEncostaNaInstalacaoTests(unittest.TestCase):
+    """Nenhum teste pode escrever na instalação de quem roda a suíte.
+
+    Já escreveu: um teste da troca de executável deixou o roteiro `.bat`
+    dentro de `%LOCALAPPDATA%/Dezorzi NFS-e/atualizacao` da máquina de
+    desenvolvimento. Ninguém percebeu porque nada quebrou — o estrago
+    silencioso é o que este teste existe para impedir.
+
+    A proteção é uma só e vale para todos: `%LOCALAPPDATA%` aponta para a
+    caixa de areia durante a suíte inteira.
+    """
+
+    def test_a_pasta_do_usuario_esta_na_caixa_de_areia(self):
+        for nome, achar in (("paths", paths._pasta_do_usuario),
+                            ("updater", updater.pasta_de_trabalho),
+                            ("instalador", instalador.pasta_do_usuario)):
+            caminho = str(achar()).lower()
+            self.assertIn(_sandbox.name.lower(), caminho,
+                          f"{nome} aponta para fora da caixa de areia: {caminho}")
+
+    def test_a_variavel_do_windows_foi_redirecionada(self):
+        self.assertIn(_sandbox.name.lower(), os.environ["LOCALAPPDATA"].lower())
 
 
 class LogotipoJuntoDoProgramaTests(unittest.TestCase):
