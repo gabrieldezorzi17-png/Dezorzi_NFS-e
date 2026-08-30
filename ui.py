@@ -591,6 +591,25 @@ def aplicar_estilo(raiz: tk.Misc) -> ttk.Style:
                background=[("active", ERRO_SOLIDO_HOVER), ("disabled", DESLIGADO)],
                foreground=[("disabled", DESLIGADO_TEXTO)])
 
+    # Caixa de marcar. O tema nativo do Windows desenha o quadradinho com a
+    # cor do sistema e ignora tudo que se peça — no "clam" ele é desenhado
+    # pelo Tk, e aí aceita a paleta daqui.
+    estilo.configure(
+        "Escolha.TCheckbutton", font=CORPO, background=SURFACE, foreground=INK,
+        focuscolor=SURFACE, padding=(0, 4), indicatorrelief="flat",
+        indicatormargin=(0, 0, E2, 0), indicatorbackground=SURFACE_ALT,
+        indicatorforeground="white", bordercolor=BORDER_FORTE,
+    )
+    estilo.map(
+        "Escolha.TCheckbutton",
+        background=[("active", SURFACE)],
+        foreground=[("disabled", INK_3)],
+        indicatorbackground=[("selected", PRIMARIA), ("active", SURFACE_ALT),
+                             ("disabled", DESLIGADO)],
+        indicatorforeground=[("selected", "white")],
+        bordercolor=[("selected", PRIMARIA)],
+    )
+
     estilo.configure(
         "Discreto.TButton", font=PEQUENO, padding=(10, 6),
         background=SURFACE, foreground=INK_2, borderwidth=1, bordercolor=BORDER_FORTE,
@@ -2126,6 +2145,62 @@ class Girador(tk.Canvas):
             except tk.TclError:
                 pass
             self._tarefa = None
+
+
+class Marcador(tk.Frame):
+    """Caixa de marcar desenhada, para combinar com o resto da tela.
+
+    O tema nativo do Windows pinta o quadradinho com a cor do sistema e
+    ignora o que se peça; o tema "clam" aceita cor, mas desenha o sinal de
+    marcado como um xis apertado, que num fundo escuro parece erro em vez de
+    escolha. Como tudo mais aqui já é desenhado à mão, esta também é — e aí o
+    ✓ é um ✓, no roxo da marca.
+    """
+
+    LADO = 17
+
+    def __init__(self, pai: tk.Widget, texto: str, *,
+                 variavel: tk.BooleanVar | None = None,
+                 fundo: str | None = None, cor: str | None = None) -> None:
+        fundo = fundo or SURFACE
+        super().__init__(pai, bg=fundo, cursor="hand2")
+        self.variavel = (variavel if variavel is not None
+                         else tk.BooleanVar(value=True))
+        lado = px(self.LADO)
+        self.tela = tk.Canvas(self, width=lado, height=lado, bg=fundo,
+                              highlightthickness=0, bd=0, cursor="hand2")
+        self.tela.pack(side="left", padx=(0, E2))
+        self.rotulo = tk.Label(self, text=texto, bg=fundo, fg=cor or INK,
+                               font=CORPO, cursor="hand2")
+        self.rotulo.pack(side="left")
+        # O rótulo também alterna: mirar num quadrado de 17px é trabalho, e
+        # em qualquer outro programa clicar no texto funciona.
+        for widget in (self, self.tela, self.rotulo):
+            widget.bind("<Button-1>", self._alternar)
+        self.variavel.trace_add("write", lambda *_: self._pintar())
+        self._pintar()
+
+    def _alternar(self, _evento=None) -> None:
+        self.variavel.set(not self.variavel.get())
+
+    def get(self) -> bool:
+        return bool(self.variavel.get())
+
+    def _pintar(self) -> None:
+        if not self.tela.winfo_exists():
+            return
+        lado = px(self.LADO)
+        self.tela.delete("all")
+        marcado = bool(self.variavel.get())
+        retangulo_redondo(
+            self.tela, 1, 1, lado - 1, lado - 1, px(5),
+            fill=PRIMARIA if marcado else SURFACE_ALT,
+            outline=PRIMARIA if marcado else BORDER_FORTE, width=1)
+        if marcado:
+            self.tela.create_line(
+                lado * 0.27, lado * 0.53, lado * 0.43, lado * 0.69,
+                lado * 0.74, lado * 0.31, fill="white",
+                width=max(2, px(2)), capstyle="round", joinstyle="round")
 
 
 class CampoBusca(tk.Frame):

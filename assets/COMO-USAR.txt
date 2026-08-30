@@ -3,15 +3,28 @@ DEZORZI® · EMISSOR DE NFS-e
 
 PARA INSTALAR
 -------------
-Dois cliques em "Instalar Dezorzi NFS-e.exe". Ele se instala sozinho, cria o
-atalho na Área de Trabalho e abre o programa. Não precisa escolher pasta, não
-precisa instalar Python, não precisa fazer mais nada.
+Dois cliques em "Instalar Dezorzi NFS-e.exe". Ele pergunta duas coisas e faz
+o resto:
 
-Da segunda vez em diante, abra pelo atalho — o programa abre em meio segundo.
-A primeira abertura é a única demorada, porque é quando ele se instala.
+  ONDE INSTALAR      já vem preenchido com a pasta de aplicativos do seu
+                     usuário, que funciona sem pedir administrador. Dá para
+                     escolher outra em "Procurar…".
+  OS ATALHOS         marque se quer na Área de Trabalho, no menu Iniciar, ou
+                     nos dois.
+
+Não precisa instalar Python nem nada. Da segunda vez em diante, abra pelo
+atalho — o programa abre em meio segundo. A primeira abertura é a única
+demorada, porque é quando ele se instala.
 
 Depois de instalado, o arquivo "Instalar Dezorzi NFS-e.exe" não serve mais
 para nada: pode apagar.
+
+PARA REMOVER
+------------
+Configurações do Windows > Aplicativos > Aplicativos instalados > Dezorzi
+NFS-e > Desinstalar. Ele pergunta se as notas emitidas devem sair junto — e
+a caixa vem DESMARCADA: nota emitida é documento fiscal, e a prefeitura não
+guarda cópia para você.
 
 ATUALIZAÇÕES
 ------------
@@ -21,7 +34,7 @@ ajustes não são tocados — moram fora da pasta que a atualização troca.
 
 ONDE ELE FICA
 -------------
-  %LOCALAPPDATA%\Dezorzi NFS-e\
+  (a pasta que você escolheu; por padrão %LOCALAPPDATA%\Dezorzi NFS-e\)
 
       app\              o programa. Esta pasta é TROCADA a cada atualização —
                         não guarde nada aqui dentro.

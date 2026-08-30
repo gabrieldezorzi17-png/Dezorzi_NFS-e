@@ -38,20 +38,27 @@ def _pasta_do_usuario() -> Path:
 # Nome da subpasta onde o instalador põe o programa. Ela é trocada INTEIRA a
 # cada atualização — nada que seja do usuário pode morar aí dentro.
 PASTA_DO_PROGRAMA = "app"
+# Arquivo que o empacotador põe dentro da carga. É o que distingue uma pasta
+# instalada de uma cópia solta — ver `_instalado`.
+CARIMBO_DA_VERSAO = "versao.txt"
 
 
 def _instalado() -> bool:
-    """O executável está na pasta que o instalador criou?
+    """O executável está numa pasta que o instalador criou?
 
-    A pergunta é só sobre o lugar: `…/Dezorzi NFS-e/app/programa.exe`. Uma
-    cópia solta da pasta, em qualquer outro lugar, continua sendo o que
-    sempre foi — o formato pasta guardando tudo ao lado do .exe.
+    Reconhecido pela FORMA, não pelo endereço: uma pasta chamada `app` com o
+    carimbo de versão dentro. Só o instalador produz isso.
+
+    Pelo endereço não serve mais desde que o assistente passou a perguntar
+    onde instalar — quem escolhe `D:\\Programas` continua instalado, e a
+    regra tem de valer ali igual. E a forma é específica o bastante para não
+    confundir com uma cópia solta da pasta, que não tem o carimbo.
     """
     if not getattr(sys, "frozen", False):
         return False
     ao_lado = Path(sys.executable).resolve().parent
     return (ao_lado.name.lower() == PASTA_DO_PROGRAMA
-            and ao_lado.parent == _pasta_do_usuario().resolve())
+            and (ao_lado / CARIMBO_DA_VERSAO).is_file())
 
 
 def _raiz() -> Path:

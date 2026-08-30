@@ -62,6 +62,7 @@ import desktop  # noqa: E402
 import nfse_client  # noqa: E402
 import service  # noqa: E402
 import session  # noqa: E402
+import desinstalar  # noqa: E402
 import instalador  # noqa: E402
 import storage  # noqa: E402
 import validation  # noqa: E402
@@ -6267,28 +6268,46 @@ class ProgramaInstaladoTests(unittest.TestCase):
             os.environ["LOCALAPPDATA"] = local
         shutil.rmtree(self.pasta, ignore_errors=True)
 
-    def _fingir(self, caminho_do_exe):
+    def _fingir(self, caminho_do_exe, *, carimbo=True):
+        caminho_do_exe.parent.mkdir(parents=True, exist_ok=True)
+        if carimbo:
+            (caminho_do_exe.parent / paths.CARIMBO_DA_VERSAO).write_text(
+                "1.2.3", encoding="utf-8")
         sys.frozen = True
         sys.executable = str(caminho_do_exe)
 
     def test_reconhece_a_pasta_do_instalador(self):
         exe = self.pasta / "Dezorzi NFS-e" / "app" / "Dezorzi NFS-e.exe"
-        exe.parent.mkdir(parents=True)
+        self._fingir(exe)
+        self.assertTrue(paths._instalado())
+        self.assertEqual(paths._raiz(), exe.parent.parent)
+
+    def test_reconhece_instalacao_em_pasta_escolhida(self):
+        """O assistente deixa escolher onde. A regra vale em qualquer lugar.
+
+        Reconhecer pelo endereço só funcionaria para o lugar padrão — e quem
+        escolhesse `D:/Programas` teria as notas dentro da pasta que a
+        atualização troca.
+        """
+        exe = self.pasta / "outro disco" / "Dezorzi NFS-e" / "app" / "Dezorzi NFS-e.exe"
         self._fingir(exe)
         self.assertTrue(paths._instalado())
         self.assertEqual(paths._raiz(), exe.parent.parent)
 
     def test_copia_solta_da_pasta_continua_como_era(self):
-        """Uma cópia em qualquer outro lugar guarda tudo ao lado do .exe."""
+        """Sem o carimbo não é instalação: é cópia da pasta, e guarda ao lado."""
         exe = self.pasta / "qualquer" / "app" / "Dezorzi NFS-e.exe"
-        exe.parent.mkdir(parents=True)
+        self._fingir(exe, carimbo=False)
+        self.assertFalse(paths._instalado())
+
+    def test_pasta_com_outro_nome_nao_e_instalacao(self):
+        exe = self.pasta / "Dezorzi NFS-e" / "programa" / "Dezorzi NFS-e.exe"
         self._fingir(exe)
         self.assertFalse(paths._instalado())
 
     def test_a_semente_vem_de_junto_do_exe(self):
         """No formato pasta o config/ modelo viaja ao lado, não no _internal."""
         exe = self.pasta / "Dezorzi NFS-e" / "app" / "Dezorzi NFS-e.exe"
-        exe.parent.mkdir(parents=True)
         self._fingir(exe)
         self.assertEqual(paths._embutidos(), exe.parent)
 
@@ -6484,3 +6503,170 @@ class AtualizacaoPorInstaladorTests(unittest.TestCase):
             shutil.rmtree(pasta, ignore_errors=True)
         self.assertEqual(len(chamadas), 1)
         self.assertEqual(chamadas[0][0][0][0], "cmd")
+
+
+class EscolhaDoInstaladorTests(unittest.TestCase):
+    """O que a pessoa marcou tem de sobreviver à atualização.
+
+    A pasta `app/` é trocada inteira a cada versão. Se a escolha morasse lá
+    dentro, toda atualização recriaria atalhos que a pessoa tinha apagado.
+    """
+
+    def setUp(self):
+        self.raiz = Path(tempfile.mkdtemp(prefix="escolha_")).resolve()
+        self.addCleanup(lambda: shutil.rmtree(self.raiz, ignore_errors=True))
+
+    def test_guarda_e_le_de_volta(self):
+        instalador.guardar_escolha(self.raiz, area=True, menu=False)
+        escolha = instalador.escolha_guardada(self.raiz)
+        self.assertTrue(escolha["atalho_area_de_trabalho"])
+        self.assertFalse(escolha["atalho_menu_iniciar"])
+
+    def test_fica_fora_da_pasta_trocada(self):
+        instalador.guardar_escolha(self.raiz, area=True, menu=True)
+        self.assertTrue((self.raiz / instalador.ARQUIVO_DA_ESCOLHA).is_file())
+        self.assertFalse((self.raiz / "app").exists())
+
+    def test_primeira_instalacao_nao_tem_escolha(self):
+        self.assertEqual(instalador.escolha_guardada(self.raiz), {})
+
+    def test_arquivo_estragado_nao_derruba_nada(self):
+        (self.raiz / instalador.ARQUIVO_DA_ESCOLHA).write_text(
+            "{isto nao e json", encoding="utf-8")
+        self.assertEqual(instalador.escolha_guardada(self.raiz), {})
+
+    def test_pasta_que_aceita_escrita(self):
+        self.assertTrue(instalador.pasta_aceita_escrita(self.raiz / "nova"))
+        self.assertFalse((self.raiz / "nova" / ".escrita").exists(),
+                         "deixou o arquivo de teste para trás")
+
+    def test_pasta_que_nao_aceita(self):
+        if sys.platform != "win32":
+            self.skipTest("caminho inválido é coisa do Windows")
+        self.assertFalse(instalador.pasta_aceita_escrita(Path("Z:/nao/existe")))
+
+
+class AtalhoNoLugarCertoTests(unittest.TestCase):
+    """Quem usa OneDrive tem a Área de Trabalho em outro lugar.
+
+    Criar o atalho em `%USERPROFILE%/Desktop` quando a de verdade é a do
+    OneDrive dá um atalho que ninguém vê.
+    """
+
+    def setUp(self):
+        self.pasta = Path(tempfile.mkdtemp(prefix="atalho_")).resolve()
+        self.guardado = os.environ.get("USERPROFILE")
+        os.environ["USERPROFILE"] = str(self.pasta)
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        if self.guardado is None:
+            os.environ.pop("USERPROFILE", None)
+        else:
+            os.environ["USERPROFILE"] = self.guardado
+        shutil.rmtree(self.pasta, ignore_errors=True)
+
+    def test_prefere_a_do_onedrive(self):
+        (self.pasta / "Desktop").mkdir()
+        (self.pasta / "OneDrive" / "Desktop").mkdir(parents=True)
+        self.assertEqual(instalador.area_de_trabalho(),
+                         self.pasta / "OneDrive" / "Desktop")
+
+    def test_sem_onedrive_usa_a_de_sempre(self):
+        (self.pasta / "Desktop").mkdir()
+        self.assertEqual(instalador.area_de_trabalho(),
+                         self.pasta / "Desktop")
+
+    def test_sem_nenhuma_devolve_nada(self):
+        self.assertIsNone(instalador.area_de_trabalho())
+
+
+class RegistroNoWindowsTests(unittest.TestCase):
+    """Aparecer em "Aplicativos instalados" é o que faz parecer aplicativo."""
+
+    def setUp(self):
+        if sys.platform != "win32":
+            self.skipTest("registro é coisa do Windows")
+        # Chave de teste: escrever na de verdade apagaria o registro de uma
+        # instalação real desta máquina quando o teste limpasse.
+        self.chave = instalador.CHAVE_DO_WINDOWS
+        instalador.CHAVE_DO_WINDOWS = self.chave + "Teste"
+        self.pasta = Path(tempfile.mkdtemp(prefix="registro_")).resolve()
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        instalador.tirar_do_registro()
+        instalador.CHAVE_DO_WINDOWS = self.chave
+        shutil.rmtree(self.pasta, ignore_errors=True)
+
+    def test_registra_e_le_de_volta(self):
+        exe = self.pasta / "app" / "Dezorzi NFS-e.exe"
+        exe.parent.mkdir(parents=True)
+        exe.write_text("x", encoding="utf-8")
+        self.assertTrue(instalador.registrar_no_windows(self.pasta, exe, "1.2.3"))
+        dados = instalador.registrado()
+        self.assertIn("Dezorzi", dados["DisplayName"])
+        self.assertEqual(dados["DisplayVersion"], "1.2.3")
+        self.assertEqual(dados["InstallLocation"], str(self.pasta))
+        self.assertIn("--desinstalar", dados["UninstallString"])
+
+    def test_remover_o_registro_apaga_a_chave(self):
+        exe = self.pasta / "app" / "Dezorzi NFS-e.exe"
+        exe.parent.mkdir(parents=True)
+        exe.write_text("x", encoding="utf-8")
+        instalador.registrar_no_windows(self.pasta, exe, "1.2.3")
+        self.assertTrue(instalador.tirar_do_registro())
+        self.assertEqual(instalador.registrado(), {})
+
+
+class RemocaoTests(unittest.TestCase):
+    """Desinstalar tira o programa. As notas ficam, a menos que se peça."""
+
+    def setUp(self):
+        self.raiz = Path(tempfile.mkdtemp(prefix="remover_")).resolve()
+        (self.raiz / "app").mkdir()
+        self.chamadas = []
+        self.original = desinstalar.subprocess.Popen
+        desinstalar.subprocess.Popen = lambda *a, **k: self.chamadas.append((a, k))
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        desinstalar.subprocess.Popen = self.original
+        shutil.rmtree(self.raiz, ignore_errors=True)
+
+    def test_o_roteiro_e_ascii_puro(self):
+        """`.bat` com acento já quebrou a atualização: o cmd lê em cp850."""
+        desinstalar.remover(self.raiz)
+        arquivo = Path(self.chamadas[0][0][0][2])
+        conteudo = arquivo.read_bytes()
+        self.assertEqual(conteudo, conteudo.decode("ascii").encode("ascii"))
+
+    def test_os_caminhos_vao_por_variavel_de_ambiente(self):
+        desinstalar.remover(self.raiz)
+        ambiente = self.chamadas[0][1]["env"]
+        self.assertEqual(ambiente["NFSE_APP"], str(self.raiz / "app"))
+        self.assertEqual(ambiente["NFSE_RAIZ"], str(self.raiz))
+        self.assertEqual(ambiente["NFSE_PID"], str(os.getpid()))
+
+    def test_por_padrao_as_notas_ficam(self):
+        desinstalar.remover(self.raiz)
+        self.assertEqual(self.chamadas[0][1]["env"]["NFSE_TUDO"], "0")
+
+    def test_pedindo_para_apagar_tudo_ele_avisa_o_roteiro(self):
+        desinstalar.remover(self.raiz, apagar_dados=True)
+        self.assertEqual(self.chamadas[0][1]["env"]["NFSE_TUDO"], "1")
+
+    def test_nao_apaga_nada_na_hora(self):
+        """Quem apaga é o roteiro, depois que o programa fecha.
+
+        Um programa não apaga a própria pasta enquanto está aberto — o
+        Windows segura o .exe em uso.
+        """
+        desinstalar.remover(self.raiz)
+        self.assertTrue((self.raiz / "app").is_dir())
+
+    def test_o_roteiro_espera_o_programa_morrer(self):
+        desinstalar.remover(self.raiz)
+        roteiro = Path(self.chamadas[0][0][0][2]).read_text(encoding="ascii")
+        self.assertIn("NFSE_PID", roteiro)
+        self.assertIn("goto esperar", roteiro)

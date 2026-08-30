@@ -65,12 +65,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+import paths
 import registro
 
 # A versão desta compilação. `empacotar.py` a lê para nomear o que publica, e
 # a tela de Ajustes a mostra — quem dá suporte precisa saber o que está rodando
 # sem pedir para o usuário abrir arquivo nenhum.
-VERSAO_ATUAL = "1.0.12"
+VERSAO_ATUAL = "1.0.13"
 
 VARIAVEL_URL = "NFSE_ATUALIZACAO_URL"
 ESPERA_REDE = 12          # segundos; a abertura não pode depender da internet
@@ -367,10 +368,16 @@ def rodar_instalador(baixado: Path) -> Path:
     depois que o programa fechar, senão o Windows ainda tem os arquivos
     presos e a pasta antiga não sairia do caminho.
     """
-    subprocess.Popen([str(baixado), "--silencioso", "--esperar", str(os.getpid())],
-                     cwd=str(Path(baixado).parent),
+    # `--destino`: onde o programa está AGORA. Sem isto, quem escolheu
+    # instalar em outra pasta receberia a versão nova no lugar padrão, e
+    # ficaria com duas instalações — a nova, vazia, e a antiga com as notas.
+    comando = [str(baixado), "--silencioso", "--esperar", str(os.getpid())]
+    if paths._instalado():
+        comando += ["--destino", str(paths.BASE_DIR)]
+    subprocess.Popen(comando, cwd=str(Path(baixado).parent),
                      creationflags=_sem_console(), close_fds=True)
-    registro.escrever("atualizacao por instalador", str(baixado))
+    registro.escrever("atualizacao por instalador",
+                      f"{baixado} -> {paths.BASE_DIR if paths._instalado() else 'padrao'}")
     return Path(baixado)
 
 

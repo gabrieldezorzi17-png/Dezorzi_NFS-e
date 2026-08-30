@@ -4240,4 +4240,11 @@ class ViewDocumentos(tk.Frame):
 
 
 if __name__ == "__main__":
+    # `--desinstalar` é o que o Windows chama a partir de "Aplicativos
+    # instalados" — o instalador grava este comando no registro. Vem antes de
+    # qualquer janela: quem pediu para remover não quer ver o programa abrir.
+    if "--desinstalar" in sys.argv[1:]:
+        import desinstalar
+
+        raise SystemExit(desinstalar.main())
     NfseDesktop().mainloop()

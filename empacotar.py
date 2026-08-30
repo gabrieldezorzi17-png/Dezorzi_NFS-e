@@ -63,6 +63,10 @@ MODULOS = (
     "impressao", "pdf", "prestador", "tomador", "services", "templates",
     "storage", "session", "service", "validation", "config", "paths", "ui",
     "portal", "reforma", "registro", "updater",
+    # Só é chamado por `--desinstalar`, então o PyInstaller não o vê seguindo
+    # os imports do topo — e sem ele "Aplicativos instalados" abriria um
+    # programa que não sabe se remover.
+    "desinstalar", "instalador",
 )
 
 
@@ -395,6 +399,12 @@ def construir_instalador(pasta_do_programa: Path) -> Path:
         "--workpath", str(TRABALHO),
         "--specpath", str(BASE),
         "--add-data", f"{embrulhado}{os.pathsep}.",
+        # O assistente usa a mesma paleta e o mesmo monograma do programa: um
+        # instalador com cara de outro programa já começa dizendo que as duas
+        # coisas não são a mesma.
+        "--hidden-import", "ui",
+        "--hidden-import", "marca",
+        "--hidden-import", "paths",
         "--exclude-module", "pytest",
         "--exclude-module", "unittest",
         "--exclude-module", "PIL",
