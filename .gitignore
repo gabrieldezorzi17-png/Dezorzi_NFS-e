@@ -1,0 +1,24 @@
+# O que não vai para o repositório.
+__pycache__/
+*.pyc
+build/
+executavel/
+*.spec
+
+# Segredos e dados desta máquina — nunca versionar.
+.env
+data/
+config/empresas.json
+config/empresa_ativa.txt
+config/servicos_*.json
+config/obras_*.json
+
+# Capturas do navegador: trazem cookie de sessão do portal.
+captura/
+
+# Cópias soltas do .env.
+.env.backup*
+*.env.bak
+
+# Preferências do editor, desta máquina.
+.vscode/

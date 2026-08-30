@@ -1,0 +1,2594 @@
+[
+  {
+    "codigo": "3500105",
+    "nome": "ADAMANTINA"
+  },
+  {
+    "codigo": "3500204",
+    "nome": "ADOLFO"
+  },
+  {
+    "codigo": "3500303",
+    "nome": "AGUAI"
+  },
+  {
+    "codigo": "3500402",
+    "nome": "AGUAS DA PRATA"
+  },
+  {
+    "codigo": "3500501",
+    "nome": "AGUAS DE LINDOIA"
+  },
+  {
+    "codigo": "3500550",
+    "nome": "AGUAS DE SANTA BARBARA"
+  },
+  {
+    "codigo": "3500600",
+    "nome": "AGUAS DE SAO PEDRO"
+  },
+  {
+    "codigo": "3500709",
+    "nome": "AGUDOS"
+  },
+  {
+    "codigo": "3500758",
+    "nome": "ALAMBARI"
+  },
+  {
+    "codigo": "3500808",
+    "nome": "ALFREDO MARCONDES"
+  },
+  {
+    "codigo": "3500907",
+    "nome": "ALTAIR"
+  },
+  {
+    "codigo": "3501004",
+    "nome": "ALTINOPOLIS"
+  },
+  {
+    "codigo": "3501103",
+    "nome": "ALTO ALEGRE"
+  },
+  {
+    "codigo": "3501152",
+    "nome": "ALUMINIO"
+  },
+  {
+    "codigo": "3501202",
+    "nome": "ALVARES FLORENCE"
+  },
+  {
+    "codigo": "3501301",
+    "nome": "ALVARES MACHADO"
+  },
+  {
+    "codigo": "3501400",
+    "nome": "ALVARO DE CARVALHO"
+  },
+  {
+    "codigo": "3501509",
+    "nome": "ALVINLANDIA"
+  },
+  {
+    "codigo": "3501608",
+    "nome": "AMERICANA"
+  },
+  {
+    "codigo": "3501707",
+    "nome": "AMERICO BRASILIENSE"
+  },
+  {
+    "codigo": "3501806",
+    "nome": "AMERICO DE CAMPOS"
+  },
+  {
+    "codigo": "3501905",
+    "nome": "AMPARO"
+  },
+  {
+    "codigo": "3502002",
+    "nome": "ANALANDIA"
+  },
+  {
+    "codigo": "3502101",
+    "nome": "ANDRADINA"
+  },
+  {
+    "codigo": "3502200",
+    "nome": "ANGATUBA"
+  },
+  {
+    "codigo": "3502309",
+    "nome": "ANHEMBI"
+  },
+  {
+    "codigo": "3502408",
+    "nome": "ANHUMAS"
+  },
+  {
+    "codigo": "3502507",
+    "nome": "APARECIDA"
+  },
+  {
+    "codigo": "3502606",
+    "nome": "APARECIDA D`OESTE"
+  },
+  {
+    "codigo": "3502705",
+    "nome": "APIAI"
+  },
+  {
+    "codigo": "3502754",
+    "nome": "ARACARIGUAMA"
+  },
+  {
+    "codigo": "3502804",
+    "nome": "ARACATUBA"
+  },
+  {
+    "codigo": "3502903",
+    "nome": "ARACOIABA DA SERRA"
+  },
+  {
+    "codigo": "3503000",
+    "nome": "ARAMINA"
+  },
+  {
+    "codigo": "3503109",
+    "nome": "ARANDU"
+  },
+  {
+    "codigo": "3503158",
+    "nome": "ARAPEI"
+  },
+  {
+    "codigo": "3503208",
+    "nome": "ARARAQUARA"
+  },
+  {
+    "codigo": "3503307",
+    "nome": "ARARAS"
+  },
+  {
+    "codigo": "3503356",
+    "nome": "ARCO-IRIS"
+  },
+  {
+    "codigo": "3503406",
+    "nome": "AREALVA"
+  },
+  {
+    "codigo": "3503505",
+    "nome": "AREIAS"
+  },
+  {
+    "codigo": "3503604",
+    "nome": "AREIOPOLIS"
+  },
+  {
+    "codigo": "3503703",
+    "nome": "ARIRANHA"
+  },
+  {
+    "codigo": "3503802",
+    "nome": "ARTUR NOGUEIRA"
+  },
+  {
+    "codigo": "3503901",
+    "nome": "ARUJA"
+  },
+  {
+    "codigo": "3503950",
+    "nome": "ASPASIA"
+  },
+  {
+    "codigo": "3504008",
+    "nome": "ASSIS"
+  },
+  {
+    "codigo": "3504107",
+    "nome": "ATIBAIA"
+  },
+  {
+    "codigo": "3504206",
+    "nome": "AURIFLAMA"
+  },
+  {
+    "codigo": "3504305",
+    "nome": "AVAI"
+  },
+  {
+    "codigo": "3504404",
+    "nome": "AVANHANDAVA"
+  },
+  {
+    "codigo": "3504503",
+    "nome": "AVARE"
+  },
+  {
+    "codigo": "3504602",
+    "nome": "BADY BASSITT"
+  },
+  {
+    "codigo": "3504701",
+    "nome": "BALBINOS"
+  },
+  {
+    "codigo": "3504800",
+    "nome": "BALSAMO"
+  },
+  {
+    "codigo": "3504909",
+    "nome": "BANANAL"
+  },
+  {
+    "codigo": "3505005",
+    "nome": "BARAO DE ANTONINA"
+  },
+  {
+    "codigo": "3505104",
+    "nome": "BARBOSA"
+  },
+  {
+    "codigo": "3505203",
+    "nome": "BARIRI"
+  },
+  {
+    "codigo": "3505302",
+    "nome": "BARRA BONITA"
+  },
+  {
+    "codigo": "3505351",
+    "nome": "BARRA DO CHAPEU"
+  },
+  {
+    "codigo": "3505401",
+    "nome": "BARRA DO TURVO"
+  },
+  {
+    "codigo": "3505500",
+    "nome": "BARRETOS"
+  },
+  {
+    "codigo": "3505609",
+    "nome": "BARRINHA"
+  },
+  {
+    "codigo": "3505708",
+    "nome": "BARUERI"
+  },
+  {
+    "codigo": "3505807",
+    "nome": "BASTOS"
+  },
+  {
+    "codigo": "3505906",
+    "nome": "BATATAIS"
+  },
+  {
+    "codigo": "3506003",
+    "nome": "BAURU"
+  },
+  {
+    "codigo": "3506102",
+    "nome": "BEBEDOURO"
+  },
+  {
+    "codigo": "3506201",
+    "nome": "BENTO DE ABREU"
+  },
+  {
+    "codigo": "3506300",
+    "nome": "BERNARDINO DE CAMPOS"
+  },
+  {
+    "codigo": "3506359",
+    "nome": "BERTIOGA"
+  },
+  {
+    "codigo": "3506409",
+    "nome": "BILAC"
+  },
+  {
+    "codigo": "3506508",
+    "nome": "BIRIGUI"
+  },
+  {
+    "codigo": "3506607",
+    "nome": "BIRITIBA-MIRIM"
+  },
+  {
+    "codigo": "3506706",
+    "nome": "BOA ESPERANCA DO SUL"
+  },
+  {
+    "codigo": "3506805",
+    "nome": "BOCAINA"
+  },
+  {
+    "codigo": "3506904",
+    "nome": "BOFETE"
+  },
+  {
+    "codigo": "3507001",
+    "nome": "BOITUVA"
+  },
+  {
+    "codigo": "3507100",
+    "nome": "BOM JESUS DOS PERDOES"
+  },
+  {
+    "codigo": "3507159",
+    "nome": "BOM SUCESSO DE ITARARE"
+  },
+  {
+    "codigo": "3507209",
+    "nome": "BORA"
+  },
+  {
+    "codigo": "3507308",
+    "nome": "BORACEIA"
+  },
+  {
+    "codigo": "3507407",
+    "nome": "BORBOREMA"
+  },
+  {
+    "codigo": "3507456",
+    "nome": "BOREBI"
+  },
+  {
+    "codigo": "3507506",
+    "nome": "BOTUCATU"
+  },
+  {
+    "codigo": "3507605",
+    "nome": "BRAGANCA PAULISTA"
+  },
+  {
+    "codigo": "3507704",
+    "nome": "BRAUNA"
+  },
+  {
+    "codigo": "3507753",
+    "nome": "BREJO ALEGRE"
+  },
+  {
+    "codigo": "3507803",
+    "nome": "BRODOSQUI"
+  },
+  {
+    "codigo": "3507902",
+    "nome": "BROTAS"
+  },
+  {
+    "codigo": "3508009",
+    "nome": "BURI"
+  },
+  {
+    "codigo": "3508108",
+    "nome": "BURITAMA"
+  },
+  {
+    "codigo": "3508207",
+    "nome": "BURITIZAL"
+  },
+  {
+    "codigo": "3508306",
+    "nome": "CABRALIA PAULISTA"
+  },
+  {
+    "codigo": "3508405",
+    "nome": "CABREUVA"
+  },
+  {
+    "codigo": "3508504",
+    "nome": "CACAPAVA"
+  },
+  {
+    "codigo": "3508603",
+    "nome": "CACHOEIRA PAULISTA"
+  },
+  {
+    "codigo": "3508702",
+    "nome": "CACONDE"
+  },
+  {
+    "codigo": "3508801",
+    "nome": "CAFELANDIA"
+  },
+  {
+    "codigo": "3508900",
+    "nome": "CAIABU"
+  },
+  {
+    "codigo": "3509007",
+    "nome": "CAIEIRAS"
+  },
+  {
+    "codigo": "3509106",
+    "nome": "CAIUA"
+  },
+  {
+    "codigo": "3509205",
+    "nome": "CAJAMAR"
+  },
+  {
+    "codigo": "3509254",
+    "nome": "CAJATI"
+  },
+  {
+    "codigo": "3509304",
+    "nome": "CAJOBI"
+  },
+  {
+    "codigo": "3509403",
+    "nome": "CAJURU"
+  },
+  {
+    "codigo": "3509452",
+    "nome": "CAMPINA DO MONTE ALEGRE"
+  },
+  {
+    "codigo": "3509502",
+    "nome": "CAMPINAS"
+  },
+  {
+    "codigo": "3509601",
+    "nome": "CAMPO LIMPO PAULISTA"
+  },
+  {
+    "codigo": "3509700",
+    "nome": "CAMPOS DO JORDAO"
+  },
+  {
+    "codigo": "3509809",
+    "nome": "CAMPOS NOVOS PAULISTA"
+  },
+  {
+    "codigo": "3509908",
+    "nome": "CANANEIA"
+  },
+  {
+    "codigo": "3509957",
+    "nome": "CANAS"
+  },
+  {
+    "codigo": "3510005",
+    "nome": "CANDIDO MOTA"
+  },
+  {
+    "codigo": "3510104",
+    "nome": "CANDIDO RODRIGUES"
+  },
+  {
+    "codigo": "3510153",
+    "nome": "CANITAR"
+  },
+  {
+    "codigo": "3510203",
+    "nome": "CAPAO BONITO"
+  },
+  {
+    "codigo": "3510302",
+    "nome": "CAPELA DO ALTO"
+  },
+  {
+    "codigo": "3510401",
+    "nome": "CAPIVARI"
+  },
+  {
+    "codigo": "3510500",
+    "nome": "CARAGUATATUBA"
+  },
+  {
+    "codigo": "3510609",
+    "nome": "CARAPICUIBA"
+  },
+  {
+    "codigo": "3510708",
+    "nome": "CARDOSO"
+  },
+  {
+    "codigo": "3510807",
+    "nome": "CASA BRANCA"
+  },
+  {
+    "codigo": "3510906",
+    "nome": "CASSIA DOS COQUEIROS"
+  },
+  {
+    "codigo": "3511003",
+    "nome": "CASTILHO"
+  },
+  {
+    "codigo": "3511102",
+    "nome": "CATANDUVA"
+  },
+  {
+    "codigo": "3511201",
+    "nome": "CATIGUA"
+  },
+  {
+    "codigo": "3511300",
+    "nome": "CEDRAL"
+  },
+  {
+    "codigo": "3511409",
+    "nome": "CERQUEIRA CESAR"
+  },
+  {
+    "codigo": "3511508",
+    "nome": "CERQUILHO"
+  },
+  {
+    "codigo": "3511607",
+    "nome": "CESARIO LANGE"
+  },
+  {
+    "codigo": "3511706",
+    "nome": "CHARQUEADA"
+  },
+  {
+    "codigo": "3557204",
+    "nome": "CHAVANTES"
+  },
+  {
+    "codigo": "3511904",
+    "nome": "CLEMENTINA"
+  },
+  {
+    "codigo": "3512001",
+    "nome": "COLINA"
+  },
+  {
+    "codigo": "3512100",
+    "nome": "COLOMBIA"
+  },
+  {
+    "codigo": "3512209",
+    "nome": "CONCHAL"
+  },
+  {
+    "codigo": "3512308",
+    "nome": "CONCHAS"
+  },
+  {
+    "codigo": "3512407",
+    "nome": "CORDEIROPOLIS"
+  },
+  {
+    "codigo": "3512506",
+    "nome": "COROADOS"
+  },
+  {
+    "codigo": "3512605",
+    "nome": "CORONEL MACEDO"
+  },
+  {
+    "codigo": "3512704",
+    "nome": "CORUMBATAI"
+  },
+  {
+    "codigo": "3512803",
+    "nome": "COSMOPOLIS"
+  },
+  {
+    "codigo": "3512902",
+    "nome": "COSMORAMA"
+  },
+  {
+    "codigo": "3513009",
+    "nome": "COTIA"
+  },
+  {
+    "codigo": "3513108",
+    "nome": "CRAVINHOS"
+  },
+  {
+    "codigo": "3513207",
+    "nome": "CRISTAIS PAULISTA"
+  },
+  {
+    "codigo": "3513306",
+    "nome": "CRUZALIA"
+  },
+  {
+    "codigo": "3513405",
+    "nome": "CRUZEIRO"
+  },
+  {
+    "codigo": "3513504",
+    "nome": "CUBATAO"
+  },
+  {
+    "codigo": "3513603",
+    "nome": "CUNHA"
+  },
+  {
+    "codigo": "3513702",
+    "nome": "DESCALVADO"
+  },
+  {
+    "codigo": "3513801",
+    "nome": "DIADEMA"
+  },
+  {
+    "codigo": "3513850",
+    "nome": "DIRCE REIS"
+  },
+  {
+    "codigo": "3513900",
+    "nome": "DIVINOLANDIA"
+  },
+  {
+    "codigo": "3514007",
+    "nome": "DOBRADA"
+  },
+  {
+    "codigo": "3514106",
+    "nome": "DOIS CORREGOS"
+  },
+  {
+    "codigo": "3514205",
+    "nome": "DOLCINOPOLIS"
+  },
+  {
+    "codigo": "3514304",
+    "nome": "DOURADO"
+  },
+  {
+    "codigo": "3514403",
+    "nome": "DRACENA"
+  },
+  {
+    "codigo": "3514502",
+    "nome": "DUARTINA"
+  },
+  {
+    "codigo": "3514601",
+    "nome": "DUMONT"
+  },
+  {
+    "codigo": "3514700",
+    "nome": "ECHAPORA"
+  },
+  {
+    "codigo": "3514809",
+    "nome": "ELDORADO"
+  },
+  {
+    "codigo": "3514908",
+    "nome": "ELIAS FAUSTO"
+  },
+  {
+    "codigo": "3514924",
+    "nome": "ELISIARIO"
+  },
+  {
+    "codigo": "3514957",
+    "nome": "EMBAUBA"
+  },
+  {
+    "codigo": "3515004",
+    "nome": "EMBU DAS ARTES"
+  },
+  {
+    "codigo": "3515103",
+    "nome": "EMBU-GUACU"
+  },
+  {
+    "codigo": "3515129",
+    "nome": "EMILIANOPOLIS"
+  },
+  {
+    "codigo": "3515152",
+    "nome": "ENGENHEIRO COELHO"
+  },
+  {
+    "codigo": "3515186",
+    "nome": "ESPIRITO SANTO DO PINHAL"
+  },
+  {
+    "codigo": "3515194",
+    "nome": "ESPIRITO SANTO DO TURVO"
+  },
+  {
+    "codigo": "3557303",
+    "nome": "ESTIVA GERBI"
+  },
+  {
+    "codigo": "3515301",
+    "nome": "ESTRELA DO NORTE"
+  },
+  {
+    "codigo": "3515202",
+    "nome": "ESTRELA D`OESTE"
+  },
+  {
+    "codigo": "3515350",
+    "nome": "EUCLIDES DA CUNHA PAULISTA"
+  },
+  {
+    "codigo": "3515400",
+    "nome": "FARTURA"
+  },
+  {
+    "codigo": "3515608",
+    "nome": "FERNANDO PRESTES"
+  },
+  {
+    "codigo": "3515509",
+    "nome": "FERNANDOPOLIS"
+  },
+  {
+    "codigo": "3515657",
+    "nome": "FERNAO"
+  },
+  {
+    "codigo": "3515707",
+    "nome": "FERRAZ DE VASCONCELOS"
+  },
+  {
+    "codigo": "3515806",
+    "nome": "FLORA RICA"
+  },
+  {
+    "codigo": "3515905",
+    "nome": "FLOREAL"
+  },
+  {
+    "codigo": "3516002",
+    "nome": "FLORIDA PAULISTA"
+  },
+  {
+    "codigo": "3516101",
+    "nome": "FLORINIA"
+  },
+  {
+    "codigo": "3516200",
+    "nome": "FRANCA"
+  },
+  {
+    "codigo": "3516309",
+    "nome": "FRANCISCO MORATO"
+  },
+  {
+    "codigo": "3516408",
+    "nome": "FRANCO DA ROCHA"
+  },
+  {
+    "codigo": "3516507",
+    "nome": "GABRIEL MONTEIRO"
+  },
+  {
+    "codigo": "3516606",
+    "nome": "GALIA"
+  },
+  {
+    "codigo": "3516705",
+    "nome": "GARCA"
+  },
+  {
+    "codigo": "3516804",
+    "nome": "GASTAO VIDIGAL"
+  },
+  {
+    "codigo": "3516853",
+    "nome": "GAVIAO PEIXOTO"
+  },
+  {
+    "codigo": "3516903",
+    "nome": "GENERAL SALGADO"
+  },
+  {
+    "codigo": "3517000",
+    "nome": "GETULINA"
+  },
+  {
+    "codigo": "3517109",
+    "nome": "GLICERIO"
+  },
+  {
+    "codigo": "3517208",
+    "nome": "GUAICARA"
+  },
+  {
+    "codigo": "3517307",
+    "nome": "GUAIMBE"
+  },
+  {
+    "codigo": "3517406",
+    "nome": "GUAIRA"
+  },
+  {
+    "codigo": "3517505",
+    "nome": "GUAPIACU"
+  },
+  {
+    "codigo": "3517604",
+    "nome": "GUAPIARA"
+  },
+  {
+    "codigo": "3517703",
+    "nome": "GUARA"
+  },
+  {
+    "codigo": "3517802",
+    "nome": "GUARACAI"
+  },
+  {
+    "codigo": "3517901",
+    "nome": "GUARACI"
+  },
+  {
+    "codigo": "3518008",
+    "nome": "GUARANI D`OESTE"
+  },
+  {
+    "codigo": "3518107",
+    "nome": "GUARANTA"
+  },
+  {
+    "codigo": "3518206",
+    "nome": "GUARARAPES"
+  },
+  {
+    "codigo": "3518305",
+    "nome": "GUARAREMA"
+  },
+  {
+    "codigo": "3518404",
+    "nome": "GUARATINGUETA"
+  },
+  {
+    "codigo": "3518503",
+    "nome": "GUAREI"
+  },
+  {
+    "codigo": "3518602",
+    "nome": "GUARIBA"
+  },
+  {
+    "codigo": "3518701",
+    "nome": "GUARUJA"
+  },
+  {
+    "codigo": "3518800",
+    "nome": "GUARULHOS"
+  },
+  {
+    "codigo": "3518859",
+    "nome": "GUATAPARA"
+  },
+  {
+    "codigo": "3518909",
+    "nome": "GUZOLANDIA"
+  },
+  {
+    "codigo": "3519006",
+    "nome": "HERCULANDIA"
+  },
+  {
+    "codigo": "3519055",
+    "nome": "HOLAMBRA"
+  },
+  {
+    "codigo": "3519071",
+    "nome": "HORTOLANDIA"
+  },
+  {
+    "codigo": "3519105",
+    "nome": "IACANGA"
+  },
+  {
+    "codigo": "3519204",
+    "nome": "IACRI"
+  },
+  {
+    "codigo": "3519253",
+    "nome": "IARAS"
+  },
+  {
+    "codigo": "3519303",
+    "nome": "IBATE"
+  },
+  {
+    "codigo": "3519402",
+    "nome": "IBIRA"
+  },
+  {
+    "codigo": "3519501",
+    "nome": "IBIRAREMA"
+  },
+  {
+    "codigo": "3519600",
+    "nome": "IBITINGA"
+  },
+  {
+    "codigo": "3519709",
+    "nome": "IBIUNA"
+  },
+  {
+    "codigo": "3519808",
+    "nome": "ICEM"
+  },
+  {
+    "codigo": "3519907",
+    "nome": "IEPE"
+  },
+  {
+    "codigo": "3520004",
+    "nome": "IGARACU DO TIETE"
+  },
+  {
+    "codigo": "3520103",
+    "nome": "IGARAPAVA"
+  },
+  {
+    "codigo": "3520202",
+    "nome": "IGARATA"
+  },
+  {
+    "codigo": "3520301",
+    "nome": "IGUAPE"
+  },
+  {
+    "codigo": "3520426",
+    "nome": "ILHA COMPRIDA"
+  },
+  {
+    "codigo": "3520442",
+    "nome": "ILHA SOLTEIRA"
+  },
+  {
+    "codigo": "3520400",
+    "nome": "ILHABELA"
+  },
+  {
+    "codigo": "3520509",
+    "nome": "INDAIATUBA"
+  },
+  {
+    "codigo": "3520608",
+    "nome": "INDIANA"
+  },
+  {
+    "codigo": "3520707",
+    "nome": "INDIAPORA"
+  },
+  {
+    "codigo": "3520806",
+    "nome": "INUBIA PAULISTA"
+  },
+  {
+    "codigo": "3520905",
+    "nome": "IPAUSSU"
+  },
+  {
+    "codigo": "3521002",
+    "nome": "IPERO"
+  },
+  {
+    "codigo": "3521101",
+    "nome": "IPEUNA"
+  },
+  {
+    "codigo": "3521150",
+    "nome": "IPIGUA"
+  },
+  {
+    "codigo": "3521200",
+    "nome": "IPORANGA"
+  },
+  {
+    "codigo": "3521309",
+    "nome": "IPUA"
+  },
+  {
+    "codigo": "3521408",
+    "nome": "IRACEMAPOLIS"
+  },
+  {
+    "codigo": "3521507",
+    "nome": "IRAPUA"
+  },
+  {
+    "codigo": "3521606",
+    "nome": "IRAPURU"
+  },
+  {
+    "codigo": "3521705",
+    "nome": "ITABERA"
+  },
+  {
+    "codigo": "3521804",
+    "nome": "ITAI"
+  },
+  {
+    "codigo": "3521903",
+    "nome": "ITAJOBI"
+  },
+  {
+    "codigo": "3522000",
+    "nome": "ITAJU"
+  },
+  {
+    "codigo": "3522109",
+    "nome": "ITANHAEM"
+  },
+  {
+    "codigo": "3522158",
+    "nome": "ITAOCA"
+  },
+  {
+    "codigo": "3522208",
+    "nome": "ITAPECERICA DA SERRA"
+  },
+  {
+    "codigo": "3522307",
+    "nome": "ITAPETININGA"
+  },
+  {
+    "codigo": "3522406",
+    "nome": "ITAPEVA"
+  },
+  {
+    "codigo": "3522505",
+    "nome": "ITAPEVI"
+  },
+  {
+    "codigo": "3522604",
+    "nome": "ITAPIRA"
+  },
+  {
+    "codigo": "3522653",
+    "nome": "ITAPIRAPUA PAULISTA"
+  },
+  {
+    "codigo": "3522703",
+    "nome": "ITAPOLIS"
+  },
+  {
+    "codigo": "3522802",
+    "nome": "ITAPORANGA"
+  },
+  {
+    "codigo": "3522901",
+    "nome": "ITAPUI"
+  },
+  {
+    "codigo": "3523008",
+    "nome": "ITAPURA"
+  },
+  {
+    "codigo": "3523107",
+    "nome": "ITAQUAQUECETUBA"
+  },
+  {
+    "codigo": "3523206",
+    "nome": "ITARARE"
+  },
+  {
+    "codigo": "3523305",
+    "nome": "ITARIRI"
+  },
+  {
+    "codigo": "3523404",
+    "nome": "ITATIBA"
+  },
+  {
+    "codigo": "3523503",
+    "nome": "ITATINGA"
+  },
+  {
+    "codigo": "3523602",
+    "nome": "ITIRAPINA"
+  },
+  {
+    "codigo": "3523701",
+    "nome": "ITIRAPUA"
+  },
+  {
+    "codigo": "3523800",
+    "nome": "ITOBI"
+  },
+  {
+    "codigo": "3523909",
+    "nome": "ITU"
+  },
+  {
+    "codigo": "3524006",
+    "nome": "ITUPEVA"
+  },
+  {
+    "codigo": "3524105",
+    "nome": "ITUVERAVA"
+  },
+  {
+    "codigo": "3524204",
+    "nome": "JABORANDI"
+  },
+  {
+    "codigo": "3524303",
+    "nome": "JABOTICABAL"
+  },
+  {
+    "codigo": "3524402",
+    "nome": "JACAREI"
+  },
+  {
+    "codigo": "3524501",
+    "nome": "JACI"
+  },
+  {
+    "codigo": "3524600",
+    "nome": "JACUPIRANGA"
+  },
+  {
+    "codigo": "3524709",
+    "nome": "JAGUARIUNA"
+  },
+  {
+    "codigo": "3524808",
+    "nome": "JALES"
+  },
+  {
+    "codigo": "3524907",
+    "nome": "JAMBEIRO"
+  },
+  {
+    "codigo": "3525003",
+    "nome": "JANDIRA"
+  },
+  {
+    "codigo": "3525102",
+    "nome": "JARDINOPOLIS"
+  },
+  {
+    "codigo": "3525201",
+    "nome": "JARINU"
+  },
+  {
+    "codigo": "3525300",
+    "nome": "JAU"
+  },
+  {
+    "codigo": "3525409",
+    "nome": "JERIQUARA"
+  },
+  {
+    "codigo": "3525508",
+    "nome": "JOANOPOLIS"
+  },
+  {
+    "codigo": "3525607",
+    "nome": "JOAO RAMALHO"
+  },
+  {
+    "codigo": "3525706",
+    "nome": "JOSE BONIFACIO"
+  },
+  {
+    "codigo": "3525805",
+    "nome": "JULIO MESQUITA"
+  },
+  {
+    "codigo": "3525854",
+    "nome": "JUMIRIM"
+  },
+  {
+    "codigo": "3525904",
+    "nome": "JUNDIAI"
+  },
+  {
+    "codigo": "3526001",
+    "nome": "JUNQUEIROPOLIS"
+  },
+  {
+    "codigo": "3526100",
+    "nome": "JUQUIA"
+  },
+  {
+    "codigo": "3526209",
+    "nome": "JUQUITIBA"
+  },
+  {
+    "codigo": "3526308",
+    "nome": "LAGOINHA"
+  },
+  {
+    "codigo": "3526407",
+    "nome": "LARANJAL PAULISTA"
+  },
+  {
+    "codigo": "3526506",
+    "nome": "LAVINIA"
+  },
+  {
+    "codigo": "3526605",
+    "nome": "LAVRINHAS"
+  },
+  {
+    "codigo": "3526704",
+    "nome": "LEME"
+  },
+  {
+    "codigo": "3526803",
+    "nome": "LENCOIS PAULISTA"
+  },
+  {
+    "codigo": "3526902",
+    "nome": "LIMEIRA"
+  },
+  {
+    "codigo": "3527009",
+    "nome": "LINDOIA"
+  },
+  {
+    "codigo": "3527108",
+    "nome": "LINS"
+  },
+  {
+    "codigo": "3527207",
+    "nome": "LORENA"
+  },
+  {
+    "codigo": "3527256",
+    "nome": "LOURDES"
+  },
+  {
+    "codigo": "3527306",
+    "nome": "LOUVEIRA"
+  },
+  {
+    "codigo": "3527405",
+    "nome": "LUCELIA"
+  },
+  {
+    "codigo": "3527504",
+    "nome": "LUCIANOPOLIS"
+  },
+  {
+    "codigo": "3527603",
+    "nome": "LUIS ANTONIO"
+  },
+  {
+    "codigo": "3527702",
+    "nome": "LUIZIANIA"
+  },
+  {
+    "codigo": "3527801",
+    "nome": "LUPERCIO"
+  },
+  {
+    "codigo": "3527900",
+    "nome": "LUTECIA"
+  },
+  {
+    "codigo": "3528007",
+    "nome": "MACATUBA"
+  },
+  {
+    "codigo": "3528106",
+    "nome": "MACAUBAL"
+  },
+  {
+    "codigo": "3528205",
+    "nome": "MACEDONIA"
+  },
+  {
+    "codigo": "3528304",
+    "nome": "MAGDA"
+  },
+  {
+    "codigo": "3528403",
+    "nome": "MAIRINQUE"
+  },
+  {
+    "codigo": "3528502",
+    "nome": "MAIRIPORA"
+  },
+  {
+    "codigo": "3528601",
+    "nome": "MANDURI"
+  },
+  {
+    "codigo": "3528700",
+    "nome": "MARABA PAULISTA"
+  },
+  {
+    "codigo": "3528809",
+    "nome": "MARACAI"
+  },
+  {
+    "codigo": "3528858",
+    "nome": "MARAPOAMA"
+  },
+  {
+    "codigo": "3528908",
+    "nome": "MARIAPOLIS"
+  },
+  {
+    "codigo": "3529005",
+    "nome": "MARILIA"
+  },
+  {
+    "codigo": "3529104",
+    "nome": "MARINOPOLIS"
+  },
+  {
+    "codigo": "3529203",
+    "nome": "MARTINOPOLIS"
+  },
+  {
+    "codigo": "3529302",
+    "nome": "MATAO"
+  },
+  {
+    "codigo": "3529401",
+    "nome": "MAUA"
+  },
+  {
+    "codigo": "3529500",
+    "nome": "MENDONCA"
+  },
+  {
+    "codigo": "3529609",
+    "nome": "MERIDIANO"
+  },
+  {
+    "codigo": "3529658",
+    "nome": "MESOPOLIS"
+  },
+  {
+    "codigo": "3529708",
+    "nome": "MIGUELOPOLIS"
+  },
+  {
+    "codigo": "3529807",
+    "nome": "MINEIROS DO TIETE"
+  },
+  {
+    "codigo": "3530003",
+    "nome": "MIRA ESTRELA"
+  },
+  {
+    "codigo": "3529906",
+    "nome": "MIRACATU"
+  },
+  {
+    "codigo": "3530102",
+    "nome": "MIRANDOPOLIS"
+  },
+  {
+    "codigo": "3530201",
+    "nome": "MIRANTE DO PARANAPANEMA"
+  },
+  {
+    "codigo": "3530300",
+    "nome": "MIRASSOL"
+  },
+  {
+    "codigo": "3530409",
+    "nome": "MIRASSOLANDIA"
+  },
+  {
+    "codigo": "3530508",
+    "nome": "MOCOCA"
+  },
+  {
+    "codigo": "3530607",
+    "nome": "MOGI DAS CRUZES "
+  },
+  {
+    "codigo": "3530706",
+    "nome": "MOGI GUACU"
+  },
+  {
+    "codigo": "3530805",
+    "nome": "MOGI MIRIM "
+  },
+  {
+    "codigo": "3530904",
+    "nome": "MOMBUCA"
+  },
+  {
+    "codigo": "3531001",
+    "nome": "MONCOES"
+  },
+  {
+    "codigo": "3531100",
+    "nome": "MONGAGUA"
+  },
+  {
+    "codigo": "3531209",
+    "nome": "MONTE ALEGRE DO SUL"
+  },
+  {
+    "codigo": "3531308",
+    "nome": "MONTE ALTO"
+  },
+  {
+    "codigo": "3531407",
+    "nome": "MONTE APRAZIVEL"
+  },
+  {
+    "codigo": "3531506",
+    "nome": "MONTE AZUL PAULISTA"
+  },
+  {
+    "codigo": "3531605",
+    "nome": "MONTE CASTELO"
+  },
+  {
+    "codigo": "3531803",
+    "nome": "MONTE MOR"
+  },
+  {
+    "codigo": "3531704",
+    "nome": "MONTEIRO LOBATO"
+  },
+  {
+    "codigo": "3531902",
+    "nome": "MORRO AGUDO"
+  },
+  {
+    "codigo": "3532009",
+    "nome": "MORUNGABA"
+  },
+  {
+    "codigo": "3532058",
+    "nome": "MOTUCA"
+  },
+  {
+    "codigo": "3532108",
+    "nome": "MURUTINGA DO SUL"
+  },
+  {
+    "codigo": "3500805",
+    "nome": "Mogi Mirim"
+  },
+  {
+    "codigo": "3503530",
+    "nome": "Mogi Mirim"
+  },
+  {
+    "codigo": "3535306",
+    "nome": "Mogi das Cruzes"
+  },
+  {
+    "codigo": "3532157",
+    "nome": "NANTES"
+  },
+  {
+    "codigo": "3532207",
+    "nome": "NARANDIBA"
+  },
+  {
+    "codigo": "3532306",
+    "nome": "NATIVIDADE DA SERRA"
+  },
+  {
+    "codigo": "3532405",
+    "nome": "NAZARE PAULISTA"
+  },
+  {
+    "codigo": "3532504",
+    "nome": "NEVES PAULISTA"
+  },
+  {
+    "codigo": "3532603",
+    "nome": "NHANDEARA"
+  },
+  {
+    "codigo": "3532702",
+    "nome": "NIPOA"
+  },
+  {
+    "codigo": "3532801",
+    "nome": "NOVA ALIANCA"
+  },
+  {
+    "codigo": "3532827",
+    "nome": "NOVA CAMPINA"
+  },
+  {
+    "codigo": "3532843",
+    "nome": "NOVA CANAA PAULISTA"
+  },
+  {
+    "codigo": "3532868",
+    "nome": "NOVA CASTILHO"
+  },
+  {
+    "codigo": "3532900",
+    "nome": "NOVA EUROPA"
+  },
+  {
+    "codigo": "3533007",
+    "nome": "NOVA GRANADA"
+  },
+  {
+    "codigo": "3533106",
+    "nome": "NOVA GUATAPORANGA"
+  },
+  {
+    "codigo": "3533205",
+    "nome": "NOVA INDEPENDENCIA"
+  },
+  {
+    "codigo": "3533304",
+    "nome": "NOVA LUZITANIA"
+  },
+  {
+    "codigo": "3533403",
+    "nome": "NOVA ODESSA"
+  },
+  {
+    "codigo": "3533254",
+    "nome": "NOVAIS"
+  },
+  {
+    "codigo": "3533502",
+    "nome": "NOVO HORIZONTE"
+  },
+  {
+    "codigo": "3533601",
+    "nome": "NUPORANGA"
+  },
+  {
+    "codigo": "3533700",
+    "nome": "OCAUCU"
+  },
+  {
+    "codigo": "3533809",
+    "nome": "OLEO"
+  },
+  {
+    "codigo": "3533908",
+    "nome": "OLIMPIA"
+  },
+  {
+    "codigo": "3534005",
+    "nome": "ONDA VERDE"
+  },
+  {
+    "codigo": "3534104",
+    "nome": "ORIENTE"
+  },
+  {
+    "codigo": "3534203",
+    "nome": "ORINDIUVA"
+  },
+  {
+    "codigo": "3534302",
+    "nome": "ORLANDIA"
+  },
+  {
+    "codigo": "3534401",
+    "nome": "OSASCO"
+  },
+  {
+    "codigo": "3534500",
+    "nome": "OSCAR BRESSANE"
+  },
+  {
+    "codigo": "3534609",
+    "nome": "OSVALDO CRUZ"
+  },
+  {
+    "codigo": "3534708",
+    "nome": "OURINHOS"
+  },
+  {
+    "codigo": "3534807",
+    "nome": "OURO VERDE"
+  },
+  {
+    "codigo": "3534757",
+    "nome": "OUROESTE"
+  },
+  {
+    "codigo": "3534906",
+    "nome": "PACAEMBU"
+  },
+  {
+    "codigo": "3535002",
+    "nome": "PALESTINA"
+  },
+  {
+    "codigo": "3535101",
+    "nome": "PALMARES PAULISTA"
+  },
+  {
+    "codigo": "3535200",
+    "nome": "PALMEIRA D`OESTE"
+  },
+  {
+    "codigo": "3535309",
+    "nome": "PALMITAL"
+  },
+  {
+    "codigo": "3535408",
+    "nome": "PANORAMA"
+  },
+  {
+    "codigo": "3535507",
+    "nome": "PARAGUACU PAULISTA"
+  },
+  {
+    "codigo": "3535606",
+    "nome": "PARAIBUNA"
+  },
+  {
+    "codigo": "3535705",
+    "nome": "PARAISO"
+  },
+  {
+    "codigo": "3535804",
+    "nome": "PARANAPANEMA"
+  },
+  {
+    "codigo": "3535903",
+    "nome": "PARANAPUA"
+  },
+  {
+    "codigo": "3536000",
+    "nome": "PARAPUA"
+  },
+  {
+    "codigo": "3536109",
+    "nome": "PARDINHO"
+  },
+  {
+    "codigo": "3536208",
+    "nome": "PARIQUERA-ACU"
+  },
+  {
+    "codigo": "3536257",
+    "nome": "PARISI"
+  },
+  {
+    "codigo": "3536307",
+    "nome": "PATROCINIO PAULISTA"
+  },
+  {
+    "codigo": "3536406",
+    "nome": "PAULICEIA"
+  },
+  {
+    "codigo": "3536505",
+    "nome": "PAULINIA"
+  },
+  {
+    "codigo": "3536570",
+    "nome": "PAULISTANIA"
+  },
+  {
+    "codigo": "3536604",
+    "nome": "PAULO DE FARIA"
+  },
+  {
+    "codigo": "3536703",
+    "nome": "PEDERNEIRAS"
+  },
+  {
+    "codigo": "3536802",
+    "nome": "PEDRA BELA"
+  },
+  {
+    "codigo": "3536901",
+    "nome": "PEDRANOPOLIS"
+  },
+  {
+    "codigo": "3537008",
+    "nome": "PEDREGULHO"
+  },
+  {
+    "codigo": "3537107",
+    "nome": "PEDREIRA"
+  },
+  {
+    "codigo": "3537156",
+    "nome": "PEDRINHAS PAULISTA"
+  },
+  {
+    "codigo": "3537206",
+    "nome": "PEDRO DE TOLEDO"
+  },
+  {
+    "codigo": "3537305",
+    "nome": "PENAPOLIS"
+  },
+  {
+    "codigo": "3537404",
+    "nome": "PEREIRA BARRETO"
+  },
+  {
+    "codigo": "3537503",
+    "nome": "PEREIRAS"
+  },
+  {
+    "codigo": "3537602",
+    "nome": "PERUIBE"
+  },
+  {
+    "codigo": "3537701",
+    "nome": "PIACATU"
+  },
+  {
+    "codigo": "3537800",
+    "nome": "PIEDADE"
+  },
+  {
+    "codigo": "3537909",
+    "nome": "PILAR DO SUL"
+  },
+  {
+    "codigo": "3538006",
+    "nome": "PINDAMONHANGABA"
+  },
+  {
+    "codigo": "3538105",
+    "nome": "PINDORAMA"
+  },
+  {
+    "codigo": "3538204",
+    "nome": "PINHALZINHO"
+  },
+  {
+    "codigo": "3538303",
+    "nome": "PIQUEROBI"
+  },
+  {
+    "codigo": "3538501",
+    "nome": "PIQUETE"
+  },
+  {
+    "codigo": "3538600",
+    "nome": "PIRACAIA"
+  },
+  {
+    "codigo": "3538709",
+    "nome": "PIRACICABA"
+  },
+  {
+    "codigo": "3538808",
+    "nome": "PIRAJU"
+  },
+  {
+    "codigo": "3538907",
+    "nome": "PIRAJUI"
+  },
+  {
+    "codigo": "3539004",
+    "nome": "PIRANGI"
+  },
+  {
+    "codigo": "3539103",
+    "nome": "PIRAPORA DO BOM JESUS"
+  },
+  {
+    "codigo": "3539202",
+    "nome": "PIRAPOZINHO"
+  },
+  {
+    "codigo": "3539301",
+    "nome": "PIRASSUNUNGA"
+  },
+  {
+    "codigo": "3539400",
+    "nome": "PIRATININGA"
+  },
+  {
+    "codigo": "3539509",
+    "nome": "PITANGUEIRAS"
+  },
+  {
+    "codigo": "3539608",
+    "nome": "PLANALTO"
+  },
+  {
+    "codigo": "3539707",
+    "nome": "PLATINA"
+  },
+  {
+    "codigo": "3539806",
+    "nome": "POA"
+  },
+  {
+    "codigo": "3539905",
+    "nome": "POLONI"
+  },
+  {
+    "codigo": "3540002",
+    "nome": "POMPEIA"
+  },
+  {
+    "codigo": "3540101",
+    "nome": "PONGAI"
+  },
+  {
+    "codigo": "3540200",
+    "nome": "PONTAL"
+  },
+  {
+    "codigo": "3540259",
+    "nome": "PONTALINDA"
+  },
+  {
+    "codigo": "3540309",
+    "nome": "PONTES GESTAL"
+  },
+  {
+    "codigo": "3540408",
+    "nome": "POPULINA"
+  },
+  {
+    "codigo": "3540507",
+    "nome": "PORANGABA"
+  },
+  {
+    "codigo": "3540606",
+    "nome": "PORTO FELIZ"
+  },
+  {
+    "codigo": "3540705",
+    "nome": "PORTO FERREIRA"
+  },
+  {
+    "codigo": "3540754",
+    "nome": "POTIM"
+  },
+  {
+    "codigo": "3540804",
+    "nome": "POTIRENDABA"
+  },
+  {
+    "codigo": "3540853",
+    "nome": "PRACINHA"
+  },
+  {
+    "codigo": "3540903",
+    "nome": "PRADOPOLIS"
+  },
+  {
+    "codigo": "3541000",
+    "nome": "PRAIA GRANDE"
+  },
+  {
+    "codigo": "3541059",
+    "nome": "PRATANIA"
+  },
+  {
+    "codigo": "3541109",
+    "nome": "PRESIDENTE ALVES"
+  },
+  {
+    "codigo": "3541208",
+    "nome": "PRESIDENTE BERNARDES"
+  },
+  {
+    "codigo": "3541307",
+    "nome": "PRESIDENTE EPITACIO"
+  },
+  {
+    "codigo": "3541406",
+    "nome": "PRESIDENTE PRUDENTE"
+  },
+  {
+    "codigo": "3541505",
+    "nome": "PRESIDENTE VENCESLAU"
+  },
+  {
+    "codigo": "3541604",
+    "nome": "PROMISSAO"
+  },
+  {
+    "codigo": "3541653",
+    "nome": "QUADRA"
+  },
+  {
+    "codigo": "3541703",
+    "nome": "QUATA"
+  },
+  {
+    "codigo": "3541802",
+    "nome": "QUEIROZ"
+  },
+  {
+    "codigo": "3541901",
+    "nome": "QUELUZ"
+  },
+  {
+    "codigo": "3542008",
+    "nome": "QUINTANA"
+  },
+  {
+    "codigo": "3542107",
+    "nome": "RAFARD"
+  },
+  {
+    "codigo": "3542206",
+    "nome": "RANCHARIA"
+  },
+  {
+    "codigo": "3542305",
+    "nome": "REDENCAO DA SERRA"
+  },
+  {
+    "codigo": "3542404",
+    "nome": "REGENTE FEIJO"
+  },
+  {
+    "codigo": "3542503",
+    "nome": "REGINOPOLIS"
+  },
+  {
+    "codigo": "3542602",
+    "nome": "REGISTRO"
+  },
+  {
+    "codigo": "3542701",
+    "nome": "RESTINGA"
+  },
+  {
+    "codigo": "3542800",
+    "nome": "RIBEIRA"
+  },
+  {
+    "codigo": "3542909",
+    "nome": "RIBEIRAO BONITO"
+  },
+  {
+    "codigo": "3543006",
+    "nome": "RIBEIRAO BRANCO"
+  },
+  {
+    "codigo": "3543105",
+    "nome": "RIBEIRAO CORRENTE"
+  },
+  {
+    "codigo": "3543204",
+    "nome": "RIBEIRAO DO SUL"
+  },
+  {
+    "codigo": "3543238",
+    "nome": "RIBEIRAO DOS INDIOS"
+  },
+  {
+    "codigo": "3543253",
+    "nome": "RIBEIRAO GRANDE"
+  },
+  {
+    "codigo": "3543303",
+    "nome": "RIBEIRAO PIRES"
+  },
+  {
+    "codigo": "3543402",
+    "nome": "RIBEIRAO PRETO"
+  },
+  {
+    "codigo": "3543600",
+    "nome": "RIFAINA"
+  },
+  {
+    "codigo": "3543709",
+    "nome": "RINCAO"
+  },
+  {
+    "codigo": "3543808",
+    "nome": "RINOPOLIS"
+  },
+  {
+    "codigo": "3543907",
+    "nome": "RIO CLARO"
+  },
+  {
+    "codigo": "3544004",
+    "nome": "RIO DAS PEDRAS"
+  },
+  {
+    "codigo": "3544103",
+    "nome": "RIO GRANDE DA SERRA"
+  },
+  {
+    "codigo": "3544202",
+    "nome": "RIOLANDIA"
+  },
+  {
+    "codigo": "3543501",
+    "nome": "RIVERSUL"
+  },
+  {
+    "codigo": "3544251",
+    "nome": "ROSANA"
+  },
+  {
+    "codigo": "3544301",
+    "nome": "ROSEIRA"
+  },
+  {
+    "codigo": "3544400",
+    "nome": "RUBIACEA"
+  },
+  {
+    "codigo": "3544509",
+    "nome": "RUBINEIA"
+  },
+  {
+    "codigo": "3544608",
+    "nome": "SABINO"
+  },
+  {
+    "codigo": "3544707",
+    "nome": "SAGRES"
+  },
+  {
+    "codigo": "3544806",
+    "nome": "SALES"
+  },
+  {
+    "codigo": "3544905",
+    "nome": "SALES OLIVEIRA"
+  },
+  {
+    "codigo": "3545001",
+    "nome": "SALESOPOLIS"
+  },
+  {
+    "codigo": "3545100",
+    "nome": "SALMOURAO"
+  },
+  {
+    "codigo": "3545159",
+    "nome": "SALTINHO"
+  },
+  {
+    "codigo": "3545209",
+    "nome": "SALTO"
+  },
+  {
+    "codigo": "3545308",
+    "nome": "SALTO DE PIRAPORA"
+  },
+  {
+    "codigo": "3545407",
+    "nome": "SALTO GRANDE"
+  },
+  {
+    "codigo": "3545506",
+    "nome": "SANDOVALINA"
+  },
+  {
+    "codigo": "3545605",
+    "nome": "SANTA ADELIA"
+  },
+  {
+    "codigo": "3545704",
+    "nome": "SANTA ALBERTINA"
+  },
+  {
+    "codigo": "3545803",
+    "nome": "SANTA BARBARA D`OESTE"
+  },
+  {
+    "codigo": "3546009",
+    "nome": "SANTA BRANCA"
+  },
+  {
+    "codigo": "3546108",
+    "nome": "SANTA CLARA D`OESTE"
+  },
+  {
+    "codigo": "3546207",
+    "nome": "SANTA CRUZ DA CONCEICAO"
+  },
+  {
+    "codigo": "3546256",
+    "nome": "SANTA CRUZ DA ESPERANCA"
+  },
+  {
+    "codigo": "3546306",
+    "nome": "SANTA CRUZ DAS PALMEIRAS"
+  },
+  {
+    "codigo": "3546405",
+    "nome": "SANTA CRUZ DO RIO PARDO"
+  },
+  {
+    "codigo": "3546504",
+    "nome": "SANTA ERNESTINA"
+  },
+  {
+    "codigo": "3546603",
+    "nome": "SANTA FE DO SUL"
+  },
+  {
+    "codigo": "3546702",
+    "nome": "SANTA GERTRUDES"
+  },
+  {
+    "codigo": "3546801",
+    "nome": "SANTA ISABEL"
+  },
+  {
+    "codigo": "3546900",
+    "nome": "SANTA LUCIA"
+  },
+  {
+    "codigo": "3547007",
+    "nome": "SANTA MARIA DA SERRA"
+  },
+  {
+    "codigo": "3547106",
+    "nome": "SANTA MERCEDES"
+  },
+  {
+    "codigo": "3547502",
+    "nome": "SANTA RITA DO PASSA QUATRO"
+  },
+  {
+    "codigo": "3547403",
+    "nome": "SANTA RITA D`OESTE"
+  },
+  {
+    "codigo": "3547601",
+    "nome": "SANTA ROSA DE VITERBO"
+  },
+  {
+    "codigo": "3547650",
+    "nome": "SANTA SALETE"
+  },
+  {
+    "codigo": "3547205",
+    "nome": "SANTANA DA PONTE PENSA"
+  },
+  {
+    "codigo": "3547304",
+    "nome": "SANTANA DE PARNAIBA"
+  },
+  {
+    "codigo": "3547700",
+    "nome": "SANTO ANASTACIO"
+  },
+  {
+    "codigo": "3547809",
+    "nome": "SANTO ANDRE"
+  },
+  {
+    "codigo": "3547908",
+    "nome": "SANTO ANTONIO DA ALEGRIA"
+  },
+  {
+    "codigo": "3548005",
+    "nome": "SANTO ANTONIO DE POSSE"
+  },
+  {
+    "codigo": "3548054",
+    "nome": "SANTO ANTONIO DO ARACANGUA"
+  },
+  {
+    "codigo": "3548104",
+    "nome": "SANTO ANTONIO DO JARDIM"
+  },
+  {
+    "codigo": "3548203",
+    "nome": "SANTO ANTONIO DO PINHAL"
+  },
+  {
+    "codigo": "3548302",
+    "nome": "SANTO EXPEDITO"
+  },
+  {
+    "codigo": "3548401",
+    "nome": "SANTOPOLIS DO AGUAPEI"
+  },
+  {
+    "codigo": "3548500",
+    "nome": "SANTOS"
+  },
+  {
+    "codigo": "3548609",
+    "nome": "SAO BENTO DO SAPUCAI"
+  },
+  {
+    "codigo": "3548708",
+    "nome": "SAO BERNARDO DO CAMPO"
+  },
+  {
+    "codigo": "3548807",
+    "nome": "SAO CAETANO DO SUL"
+  },
+  {
+    "codigo": "3548906",
+    "nome": "SAO CARLOS"
+  },
+  {
+    "codigo": "3549003",
+    "nome": "SAO FRANCISCO"
+  },
+  {
+    "codigo": "3549102",
+    "nome": "SAO JOAO DA BOA VISTA"
+  },
+  {
+    "codigo": "3549201",
+    "nome": "SAO JOAO DAS DUAS PONTES"
+  },
+  {
+    "codigo": "3549250",
+    "nome": "SAO JOAO DE IRACEMA"
+  },
+  {
+    "codigo": "3549300",
+    "nome": "SAO JOAO DO PAU D`ALHO"
+  },
+  {
+    "codigo": "3549409",
+    "nome": "SAO JOAQUIM DA BARRA"
+  },
+  {
+    "codigo": "3549508",
+    "nome": "SAO JOSE DA BELA VISTA"
+  },
+  {
+    "codigo": "3549607",
+    "nome": "SAO JOSE DO BARREIRO"
+  },
+  {
+    "codigo": "3549706",
+    "nome": "SAO JOSE DO RIO PARDO"
+  },
+  {
+    "codigo": "3549805",
+    "nome": "SAO JOSE DO RIO PRETO"
+  },
+  {
+    "codigo": "3549904",
+    "nome": "SAO JOSE DOS CAMPOS"
+  },
+  {
+    "codigo": "3549953",
+    "nome": "SAO LOURENCO DA SERRA"
+  },
+  {
+    "codigo": "3550001",
+    "nome": "SAO LUIS DO PARAITINGA"
+  },
+  {
+    "codigo": "3550100",
+    "nome": "SAO MANUEL"
+  },
+  {
+    "codigo": "3550209",
+    "nome": "SAO MIGUEL ARCANJO"
+  },
+  {
+    "codigo": "3550308",
+    "nome": "SAO PAULO"
+  },
+  {
+    "codigo": "3550407",
+    "nome": "SAO PEDRO"
+  },
+  {
+    "codigo": "3550506",
+    "nome": "SAO PEDRO DO TURVO"
+  },
+  {
+    "codigo": "3550605",
+    "nome": "SAO ROQUE"
+  },
+  {
+    "codigo": "3550704",
+    "nome": "SAO SEBASTIAO"
+  },
+  {
+    "codigo": "3550803",
+    "nome": "SAO SEBASTIAO DA GRAMA"
+  },
+  {
+    "codigo": "3550902",
+    "nome": "SAO SIMAO"
+  },
+  {
+    "codigo": "3551009",
+    "nome": "SAO VICENTE"
+  },
+  {
+    "codigo": "3551108",
+    "nome": "SARAPUI"
+  },
+  {
+    "codigo": "3551207",
+    "nome": "SARUTAIA"
+  },
+  {
+    "codigo": "3551306",
+    "nome": "SEBASTIANOPOLIS DO SUL"
+  },
+  {
+    "codigo": "3551405",
+    "nome": "SERRA AZUL"
+  },
+  {
+    "codigo": "3551603",
+    "nome": "SERRA NEGRA"
+  },
+  {
+    "codigo": "3551504",
+    "nome": "SERRANA"
+  },
+  {
+    "codigo": "3551702",
+    "nome": "SERTAOZINHO"
+  },
+  {
+    "codigo": "3551801",
+    "nome": "SETE BARRAS"
+  },
+  {
+    "codigo": "3551900",
+    "nome": "SEVERINIA"
+  },
+  {
+    "codigo": "3552007",
+    "nome": "SILVEIRAS"
+  },
+  {
+    "codigo": "3552106",
+    "nome": "SOCORRO"
+  },
+  {
+    "codigo": "3552205",
+    "nome": "SOROCABA"
+  },
+  {
+    "codigo": "3552304",
+    "nome": "SUD MENNUCCI"
+  },
+  {
+    "codigo": "3552403",
+    "nome": "SUMARE"
+  },
+  {
+    "codigo": "3552551",
+    "nome": "SUZANAPOLIS"
+  },
+  {
+    "codigo": "3552502",
+    "nome": "SUZANO"
+  },
+  {
+    "codigo": "3552601",
+    "nome": "TABAPUA"
+  },
+  {
+    "codigo": "3552700",
+    "nome": "TABATINGA"
+  },
+  {
+    "codigo": "3552809",
+    "nome": "TABOAO DA SERRA"
+  },
+  {
+    "codigo": "3552908",
+    "nome": "TACIBA"
+  },
+  {
+    "codigo": "3553005",
+    "nome": "TAGUAI"
+  },
+  {
+    "codigo": "3553104",
+    "nome": "TAIACU"
+  },
+  {
+    "codigo": "3553203",
+    "nome": "TAIUVA"
+  },
+  {
+    "codigo": "3553302",
+    "nome": "TAMBAU"
+  },
+  {
+    "codigo": "3553401",
+    "nome": "TANABI"
+  },
+  {
+    "codigo": "3553500",
+    "nome": "TAPIRAI"
+  },
+  {
+    "codigo": "3553609",
+    "nome": "TAPIRATIBA"
+  },
+  {
+    "codigo": "3553658",
+    "nome": "TAQUARAL"
+  },
+  {
+    "codigo": "3553708",
+    "nome": "TAQUARITINGA"
+  },
+  {
+    "codigo": "3553807",
+    "nome": "TAQUARITUBA"
+  },
+  {
+    "codigo": "3553856",
+    "nome": "TAQUARIVAI"
+  },
+  {
+    "codigo": "3553906",
+    "nome": "TARABAI"
+  },
+  {
+    "codigo": "3553955",
+    "nome": "TARUMA"
+  },
+  {
+    "codigo": "3554003",
+    "nome": "TATUI"
+  },
+  {
+    "codigo": "3554102",
+    "nome": "TAUBATE"
+  },
+  {
+    "codigo": "3554201",
+    "nome": "TEJUPA"
+  },
+  {
+    "codigo": "3554300",
+    "nome": "TEODORO SAMPAIO"
+  },
+  {
+    "codigo": "3554409",
+    "nome": "TERRA ROXA"
+  },
+  {
+    "codigo": "3554508",
+    "nome": "TIETE"
+  },
+  {
+    "codigo": "3554607",
+    "nome": "TIMBURI"
+  },
+  {
+    "codigo": "3554656",
+    "nome": "TORRE DE PEDRA"
+  },
+  {
+    "codigo": "3554706",
+    "nome": "TORRINHA"
+  },
+  {
+    "codigo": "3554755",
+    "nome": "TRABIJU"
+  },
+  {
+    "codigo": "3554805",
+    "nome": "TREMEMBE"
+  },
+  {
+    "codigo": "3554904",
+    "nome": "TRES FRONTEIRAS"
+  },
+  {
+    "codigo": "3554953",
+    "nome": "TUIUTI"
+  },
+  {
+    "codigo": "3555000",
+    "nome": "TUPA"
+  },
+  {
+    "codigo": "3555109",
+    "nome": "TUPI PAULISTA"
+  },
+  {
+    "codigo": "3555208",
+    "nome": "TURIUBA"
+  },
+  {
+    "codigo": "3555307",
+    "nome": "TURMALINA"
+  },
+  {
+    "codigo": "3555356",
+    "nome": "UBARANA"
+  },
+  {
+    "codigo": "3555406",
+    "nome": "UBATUBA"
+  },
+  {
+    "codigo": "3555505",
+    "nome": "UBIRAJARA"
+  },
+  {
+    "codigo": "3555604",
+    "nome": "UCHOA"
+  },
+  {
+    "codigo": "3555703",
+    "nome": "UNIAO PAULISTA"
+  },
+  {
+    "codigo": "3555802",
+    "nome": "URANIA"
+  },
+  {
+    "codigo": "3555901",
+    "nome": "URU"
+  },
+  {
+    "codigo": "3556008",
+    "nome": "URUPES"
+  },
+  {
+    "codigo": "3556107",
+    "nome": "VALENTIM GENTIL"
+  },
+  {
+    "codigo": "3556206",
+    "nome": "VALINHOS"
+  },
+  {
+    "codigo": "3556305",
+    "nome": "VALPARAISO"
+  },
+  {
+    "codigo": "3556354",
+    "nome": "VARGEM"
+  },
+  {
+    "codigo": "3556404",
+    "nome": "VARGEM GRANDE DO SUL"
+  },
+  {
+    "codigo": "3556453",
+    "nome": "VARGEM GRANDE PAULISTA"
+  },
+  {
+    "codigo": "3556503",
+    "nome": "VARZEA PAULISTA"
+  },
+  {
+    "codigo": "3556602",
+    "nome": "VERA CRUZ"
+  },
+  {
+    "codigo": "3556701",
+    "nome": "VINHEDO"
+  },
+  {
+    "codigo": "3556800",
+    "nome": "VIRADOURO"
+  },
+  {
+    "codigo": "3556909",
+    "nome": "VISTA ALEGRE DO ALTO"
+  },
+  {
+    "codigo": "3556958",
+    "nome": "VITORIA BRASIL"
+  },
+  {
+    "codigo": "3557006",
+    "nome": "VOTORANTIM"
+  },
+  {
+    "codigo": "3557105",
+    "nome": "VOTUPORANGA"
+  },
+  {
+    "codigo": "3557154",
+    "nome": "ZACARIAS"
+  }
+]

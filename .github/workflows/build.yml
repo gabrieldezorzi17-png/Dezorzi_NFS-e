@@ -1,0 +1,84 @@
+# Compila o programa e publica a versão, a cada tag `vX.Y.Z`.
+#
+# O que sai numa Release: o `.exe` de arquivo único e o `version.json` — este
+# já com o endereço de download e a impressão digital preenchidos, que é o que
+# o auto-atualizador exige para aceitar a troca. Fechado assim, publicar volta
+# a ser "criar a tag": nada precisa ser editado à mão depois.
+#
+# COMO USAR
+#   1. Suba `VERSAO_ATUAL` em updater.py.
+#   2. git commit -am "…" && git tag v1.1.0 && git push origin main --tags
+#
+# O passo "conferir a versão" existe porque esquecer o item 1 é a falha mais
+# fácil de cometer e a mais difícil de perceber: a compilação passa, a Release
+# sai, e nenhuma máquina atualiza — porque o anúncio diz a mesma versão de
+# antes. Aqui isso vira erro na hora, e não silêncio.
+
+name: Compilar e publicar
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:      # compilar à mão, sem publicar
+
+permissions:
+  contents: write         # necessário para criar a Release
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Instalar o que compila
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow
+        shell: bash
+
+      # PyInstaller compila. Pillow serve só para transformar o assets/logo.png
+      # no ícone do .exe; sem ele o ícone volta a ser o monograma desenhado e a
+      # compilação segue normalmente.
+
+      - name: Conferir a versão contra a tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python .github/workflows/conferir_versao.py "${GITHUB_REF_NAME}"
+        shell: bash
+
+      - name: Rodar os testes
+        run: python -m unittest tests.test_nfse -q
+        shell: bash
+
+      - name: Compilar o arquivo único
+        run: python empacotar.py --unico
+        shell: bash
+
+      - name: Preencher e conferir o version.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python .github/workflows/publicar_manifesto.py
+        shell: bash
+        env:
+          REPOSITORIO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+
+      - name: Guardar o que saiu
+        uses: actions/upload-artifact@v4
+        with:
+          name: executavel
+          path: |
+            executavel/*.exe
+            executavel/version.json
+
+      - name: Publicar a Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            executavel/*.exe
+            executavel/version.json
+          generate_release_notes: true

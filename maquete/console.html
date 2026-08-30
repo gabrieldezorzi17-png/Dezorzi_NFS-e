@@ -1,0 +1,756 @@
+<title>Console Fiscal Dezorzi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   Console Fiscal — sistema visual
+   Nada aqui se parece com a tela atual: sai a barra lateral, sai o
+   modal, entra uma barra de comando no topo e um painel de detalhe
+   que se abre ao lado da lista.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --vazio:      #06070d;
+  --chapa:      #0d1018;
+  --chapa-alta: #141926;
+  --chapa-topo: #10141f;
+  --fio:        #1e2536;
+  --fio-forte:  #2b3448;
+
+  --tinta:   #e9ecf7;
+  --tinta-2: #97a0bb;
+  --tinta-3: #5b6480;
+
+  --pulso:   #7b5cff;
+  --pulso-2: #a58bff;
+  --onda:    #22d3ee;
+
+  --ok:   #2ee6a8;
+  --espera: #ffc14d;
+  --falha:  #ff5c7c;
+
+  --brilho: 0 0 0 1px rgb(123 92 255 / .35), 0 0 28px -6px rgb(123 92 255 / .55);
+  --degrau: 0 1px 0 rgb(255 255 255 / .04) inset, 0 20px 44px -28px #000;
+  --mola: cubic-bezier(.22, 1, .36, 1);
+}
+
+:root[data-theme="light"] {
+  --vazio:      #eceef5;
+  --chapa:      #ffffff;
+  --chapa-alta: #f5f6fb;
+  --chapa-topo: #ffffff;
+  --fio:        #dfe3ee;
+  --fio-forte:  #c7cddd;
+
+  --tinta:   #10131f;
+  --tinta-2: #4e5670;
+  --tinta-3: #8a92a9;
+
+  --pulso:   #5b34f0;
+  --pulso-2: #7c5cff;
+  --onda:    #0e9cb8;
+
+  --ok:   #08935f;
+  --espera: #a06a00;
+  --falha:  #d02649;
+
+  --brilho: 0 0 0 1px rgb(91 52 240 / .3), 0 0 22px -8px rgb(91 52 240 / .5);
+  --degrau: 0 1px 2px rgb(16 19 31 / .05), 0 16px 32px -26px rgb(16 19 31 / .4);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --vazio: #eceef5; --chapa: #ffffff; --chapa-alta: #f5f6fb; --chapa-topo: #ffffff;
+    --fio: #dfe3ee; --fio-forte: #c7cddd;
+    --tinta: #10131f; --tinta-2: #4e5670; --tinta-3: #8a92a9;
+    --pulso: #5b34f0; --pulso-2: #7c5cff; --onda: #0e9cb8;
+    --ok: #08935f; --espera: #a06a00; --falha: #d02649;
+    --brilho: 0 0 0 1px rgb(91 52 240 / .3), 0 0 22px -8px rgb(91 52 240 / .5);
+    --degrau: 0 1px 2px rgb(16 19 31 / .05), 0 16px 32px -26px rgb(16 19 31 / .4);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--vazio);
+  color: var(--tinta);
+  font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* A aura: um brilho fixo atrás do topo, que dá profundidade sem
+   desenhar nada. É o que separa um console de um formulário. */
+body::before {
+  content: "";
+  position: fixed; inset: -30% 0 auto 0; height: 70vh;
+  background:
+    radial-gradient(60% 50% at 22% 0%, rgb(123 92 255 / .16), transparent 70%),
+    radial-gradient(45% 45% at 82% 6%, rgb(34 211 238 / .10), transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+:root[data-theme="light"] body::before,
+:root:not([data-theme="dark"]) body::before { opacity: .55; }
+
+.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+button, input, select { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--pulso); outline-offset: 3px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ═══ barra de comando ═══════════════════════════════════════════ */
+.comando {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 20px;
+  padding: 14px 26px;
+  background: color-mix(in srgb, var(--chapa-topo) 78%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-bottom: 1px solid var(--fio);
+}
+
+.marca { display: flex; align-items: center; gap: 11px; }
+.diamante {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: linear-gradient(140deg, var(--pulso), var(--onda));
+  box-shadow: var(--brilho);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 12px; color: #fff; letter-spacing: .04em;
+}
+.marca b { font-size: 14px; font-weight: 600; letter-spacing: .01em; }
+.marca span { display: block; font-size: 10px; color: var(--tinta-3); letter-spacing: .16em; text-transform: uppercase; }
+
+/* navegador segmentado, com o realce deslizando */
+.navegador {
+  position: relative; display: flex; gap: 2px;
+  background: var(--chapa-alta); border: 1px solid var(--fio);
+  border-radius: 999px; padding: 4px;
+}
+.navegador .marcador {
+  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--pulso), var(--pulso-2));
+  box-shadow: 0 6px 18px -8px var(--pulso);
+  transition: transform .42s var(--mola), width .42s var(--mola);
+}
+.navegador button {
+  position: relative; z-index: 1;
+  padding: 8px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; color: var(--tinta-2);
+  transition: color .25s;
+}
+.navegador button[aria-selected="true"] { color: #fff; }
+:root[data-theme="light"] .navegador button[aria-selected="true"] { color: #fff; }
+
+.comando .direita { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.empresa {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 12px; border-radius: 11px;
+  background: var(--chapa-alta); border: 1px solid var(--fio);
+}
+.empresa select { border: 0; background: none; font-size: 13px; font-weight: 500; cursor: pointer; max-width: 190px; }
+.empresa small { display: block; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--tinta-3); }
+
+.farol { display: flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; }
+.farol.ativo { background: color-mix(in srgb, var(--espera) 15%, transparent); color: var(--espera); }
+.farol.seguro { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+.bolha { position: relative; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.bolha::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px solid currentColor; opacity: .5;
+  animation: respirar 2.6s ease-out infinite;
+}
+@keyframes respirar { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.7); opacity: 0; } }
+
+.tema { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--fio); background: var(--chapa-alta); display: grid; place-items: center; color: var(--tinta-2); transition: color .2s, border-color .2s; }
+.tema:hover { color: var(--tinta); border-color: var(--fio-forte); }
+.tema svg { width: 15px; height: 15px; }
+
+/* ═══ palco ══════════════════════════════════════════════════════ */
+.palco { position: relative; z-index: 1; padding: 22px 26px 40px; }
+.cena { animation: entrar .5s var(--mola) both; }
+@keyframes entrar { from { opacity: 0; transform: translateY(14px); } }
+[hidden] { display: none !important; }
+
+.faixa-alta { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 20px; }
+.faixa-alta h1 { margin: 0; font-size: 27px; font-weight: 600; letter-spacing: -.025em; }
+.faixa-alta p { margin: 4px 0 0; font-size: 13px; color: var(--tinta-3); }
+.faixa-alta .acoes { margin-left: auto; display: flex; gap: 10px; }
+
+/* botão principal com aro que acende */
+.acao {
+  position: relative; overflow: hidden;
+  padding: 11px 20px; border-radius: 12px;
+  background: linear-gradient(120deg, var(--pulso), var(--pulso-2));
+  color: #fff; font-size: 13.5px; font-weight: 600;
+  box-shadow: 0 10px 26px -12px var(--pulso);
+  transition: transform .18s var(--mola), box-shadow .25s;
+}
+.acao:hover { transform: translateY(-1px); box-shadow: 0 14px 32px -12px var(--pulso); }
+.acao:active { transform: scale(.975); }
+.acao::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgb(255 255 255 / .28), transparent 70%);
+  transform: translateX(-120%);
+}
+.acao:hover::after { animation: varrer .8s var(--mola); }
+@keyframes varrer { to { transform: translateX(120%); } }
+
+.acao.calma { background: var(--chapa-alta); color: var(--tinta-2); border: 1px solid var(--fio); box-shadow: none; }
+.acao.calma:hover { color: var(--tinta); border-color: var(--fio-forte); box-shadow: none; transform: none; }
+.acao.calma::after { display: none; }
+.acao:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ═══ medidores ══════════════════════════════════════════════════ */
+.medidores { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; margin-bottom: 18px; }
+
+.medidor {
+  position: relative; overflow: hidden; text-align: left;
+  padding: 16px 18px; border-radius: 16px;
+  background: var(--chapa); border: 1px solid var(--fio);
+  box-shadow: var(--degrau);
+  transition: transform .28s var(--mola), border-color .25s, box-shadow .25s;
+}
+.medidor::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
+  background: radial-gradient(160px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--tom) 22%, transparent), transparent 65%);
+  transition: opacity .3s;
+}
+.medidor:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tom) 55%, var(--fio)); }
+.medidor:hover::before { opacity: 1; }
+.medidor .rotulo { position: relative; display: block; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--tinta-3); }
+.medidor .cifra { position: relative; display: block; margin-top: 10px; font-size: 30px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--tom); }
+.medidor .nota { position: relative; display: block; margin-top: 7px; font-size: 12px; color: var(--tinta-2); }
+.medidor[aria-pressed="true"] {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tom) 22%, var(--chapa)), var(--chapa));
+  border-color: color-mix(in srgb, var(--tom) 70%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tom) 40%, transparent), 0 16px 34px -20px var(--tom);
+}
+.medidor .barra { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--tom); transform: scaleX(0); transform-origin: left; transition: transform .4s var(--mola); }
+.medidor[aria-pressed="true"] .barra { transform: scaleX(1); }
+
+/* ═══ divisão principal: lista + detalhe ═════════════════════════ */
+.divisao { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 16px; align-items: start; }
+@media (max-width: 1080px) { .divisao { grid-template-columns: minmax(0, 1fr); } }
+
+.painel { border-radius: 18px; background: var(--chapa); border: 1px solid var(--fio); box-shadow: var(--degrau); overflow: hidden; }
+
+.ferramentas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 13px 15px; border-bottom: 1px solid var(--fio); }
+.busca { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 190px; padding: 9px 13px; border-radius: 11px; background: var(--chapa-alta); border: 1px solid var(--fio); transition: border-color .2s, box-shadow .25s; }
+.busca:focus-within { border-color: var(--pulso); box-shadow: var(--brilho); }
+.busca input { flex: 1; border: 0; background: none; outline: none; font-size: 13px; }
+.busca input::placeholder { color: var(--tinta-3); }
+.busca svg { width: 15px; height: 15px; color: var(--tinta-3); flex: none; }
+
+.periodo { display: flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 11px; background: var(--chapa-alta); border: 1px solid var(--fio); font-size: 12px; color: var(--tinta-2); }
+.periodo b { font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--tinta-3); font-weight: 600; }
+
+/* ═══ linhas ═════════════════════════════════════════════════════ */
+.linhas { max-height: 460px; overflow-y: auto; }
+.linhas::-webkit-scrollbar { width: 9px; }
+.linhas::-webkit-scrollbar-thumb { background: var(--fio-forte); border-radius: 99px; }
+
+.linha {
+  position: relative; display: grid;
+  grid-template-columns: 3px minmax(0, 1.5fr) minmax(0, 1.4fr) 118px 128px;
+  align-items: center; gap: 14px;
+  width: 100%; padding: 13px 16px 13px 0; text-align: left;
+  border-bottom: 1px solid color-mix(in srgb, var(--fio) 60%, transparent);
+  transition: background .18s;
+}
+.linha:last-child { border-bottom: 0; }
+.linha .risco { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tom, transparent); opacity: 0; transition: opacity .22s; }
+.linha:hover { background: color-mix(in srgb, var(--pulso) 7%, transparent); }
+.linha:hover .risco { opacity: .5; }
+.linha[aria-selected="true"] { background: color-mix(in srgb, var(--pulso) 12%, transparent); }
+.linha[aria-selected="true"] .risco { opacity: 1; background: var(--pulso); }
+
+.linha .quem { min-width: 0; }
+.linha .quem b { display: block; font-weight: 500; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linha .quem span { display: block; font-size: 11px; color: var(--tinta-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linha .servico { font-size: 12.5px; color: var(--tinta-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linha .cifra { text-align: right; font-size: 13.5px; }
+.linha .cifra small { color: var(--tinta-3); font-size: 10.5px; margin-right: 3px; }
+
+.selo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: color-mix(in srgb, var(--tom) 15%, transparent); color: var(--tom); }
+.selo .ponto { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.selo.viva .ponto { animation: piscar 2.2s ease-in-out infinite; }
+@keyframes piscar { 50% { opacity: .3; } }
+
+.rodape-lista { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--fio); font-size: 12px; color: var(--tinta-3); background: var(--chapa-alta); }
+.rodape-lista .soma { margin-left: auto; color: var(--tinta-2); }
+.rodape-lista .soma b { color: var(--tinta); font-size: 14px; }
+
+/* ═══ painel de detalhe ══════════════════════════════════════════ */
+.detalhe { position: sticky; top: 84px; border-radius: 18px; background: var(--chapa); border: 1px solid var(--fio); box-shadow: var(--degrau); overflow: hidden; animation: chegar .42s var(--mola) both; }
+@keyframes chegar { from { opacity: 0; transform: translateX(18px); } }
+
+.detalhe .capa { padding: 18px; background: linear-gradient(150deg, color-mix(in srgb, var(--tom) 20%, var(--chapa)), var(--chapa)); border-bottom: 1px solid var(--fio); }
+.detalhe .capa .numero { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+.detalhe .capa .cliente { margin-top: 4px; font-size: 13px; color: var(--tinta-2); }
+.detalhe .corpo { padding: 16px 18px; display: grid; gap: 13px; }
+.detalhe .par { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+.detalhe .par dt { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-3); padding-top: 2px; }
+.detalhe .par dd { margin: 0; font-size: 13px; }
+
+.porque { margin: 0 18px 16px; padding: 13px 14px; border-radius: 13px; background: color-mix(in srgb, var(--falha) 12%, transparent); border: 1px solid color-mix(in srgb, var(--falha) 32%, transparent); }
+.porque h4 { margin: 0 0 6px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--falha); }
+.porque p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--tinta-2); }
+.porque code { font-family: "IBM Plex Mono", monospace; color: var(--falha); font-size: 12px; }
+
+.detalhe .botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 0 18px 18px; }
+.vazio-detalhe { padding: 52px 24px; text-align: center; color: var(--tinta-3); }
+.vazio-detalhe svg { width: 32px; height: 32px; margin-bottom: 12px; opacity: .5; }
+.vazio-detalhe b { display: block; color: var(--tinta-2); font-size: 13.5px; margin-bottom: 4px; }
+.vazio-detalhe p { margin: 0; font-size: 12px; line-height: 1.5; }
+
+/* ═══ emissão: fluxo em degraus ══════════════════════════════════ */
+.espinha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.degrau { position: relative; padding: 14px 16px; border-radius: 14px; background: var(--chapa); border: 1px solid var(--fio); text-align: left; transition: border-color .25s, background .25s; }
+.degrau[data-estado="feito"] { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.degrau[data-estado="agora"] { border-color: var(--pulso); box-shadow: var(--brilho); background: linear-gradient(150deg, color-mix(in srgb, var(--pulso) 12%, var(--chapa)), var(--chapa)); }
+.degrau .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; font-size: 11px; font-weight: 700; background: var(--chapa-alta); color: var(--tinta-3); }
+.degrau[data-estado="feito"] .n { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.degrau[data-estado="agora"] .n { background: var(--pulso); color: #fff; }
+.degrau b { display: block; margin-top: 9px; font-size: 13px; font-weight: 500; }
+.degrau span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--tinta-3); }
+
+.formulario { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 20px; }
+.campo label { display: block; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 7px; }
+.envolto { display: flex; align-items: center; gap: 9px; padding: 11px 13px; border-radius: 12px; background: var(--chapa-alta); border: 1px solid var(--fio); transition: border-color .2s, box-shadow .25s; }
+.envolto:focus-within { border-color: var(--pulso); box-shadow: var(--brilho); }
+.envolto input, .envolto select { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 13.5px; }
+.campo .dica { margin-top: 6px; font-size: 11.5px; color: var(--tinta-3); }
+.campo.largo { grid-column: 1 / -1; }
+
+.resumo { position: sticky; bottom: 16px; display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin-top: 18px; padding: 15px 20px; border-radius: 16px; background: color-mix(in srgb, var(--chapa) 85%, transparent); backdrop-filter: blur(16px); border: 1px solid var(--fio); box-shadow: var(--degrau); }
+.resumo .item span { display: block; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; color: var(--tinta-3); }
+.resumo .item b { display: block; margin-top: 4px; font-size: 17px; font-weight: 600; }
+.resumo .item.destaque b { color: var(--pulso); font-size: 21px; }
+.resumo .fim { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+.aviso-molde { margin: 22px 0 0; padding: 13px 16px; border-radius: 13px; border: 1px dashed var(--fio-forte); font-size: 11.5px; line-height: 1.6; color: var(--tinta-3); }
+.aviso-molde b { color: var(--tinta-2); }
+</style>
+
+<div class="comando">
+  <div class="marca">
+    <div class="diamante">DZ</div>
+    <div>
+      <b>Console Fiscal</b>
+      <span>São Bernardo do Campo</span>
+    </div>
+  </div>
+
+  <div class="navegador" id="navegador" role="tablist">
+    <span class="marcador" id="marcador"></span>
+    <button role="tab" data-cena="painel" aria-selected="true">Painel</button>
+    <button role="tab" data-cena="notas" aria-selected="false">Notas</button>
+    <button role="tab" data-cena="emitir" aria-selected="false">Emitir</button>
+  </div>
+
+  <div class="direita">
+    <div class="empresa">
+      <small>Emitindo como</small>
+      <select id="empresa" aria-label="Empresa">
+        <option>Mundial Usinagem LTDA</option>
+        <option>Dezorzi Serviços Industriais</option>
+        <option>Tactus Comércio LTDA</option>
+      </select>
+    </div>
+    <span class="farol ativo"><span class="bolha"></span>TRANSMISSÃO ATIVA</span>
+    <button class="tema" id="tema" aria-label="Alternar tema">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</div>
+
+<main class="palco">
+
+  <!-- ═══════════ PAINEL ═══════════ -->
+  <section class="cena" id="cena-painel">
+    <div class="faixa-alta">
+      <div>
+        <h1>Painel</h1>
+        <p>Competência 08/2026 · três empresas ativas</p>
+      </div>
+      <div class="acoes"><button class="acao" data-ir="emitir">Emitir NFS-e</button></div>
+    </div>
+    <div class="medidores" id="medidores-painel"></div>
+    <div class="divisao">
+      <div class="painel">
+        <div class="ferramentas"><b style="font-size:13px">Últimas emissões</b></div>
+        <div class="linhas" id="recentes"></div>
+      </div>
+      <div class="detalhe" style="--tom: var(--pulso)">
+        <div class="capa">
+          <div class="numero mono">R$ 15.076,00</div>
+          <div class="cliente">faturado em agosto, nas três empresas</div>
+        </div>
+        <div class="corpo">
+          <div class="par"><dt>Mundial</dt><dd class="mono">R$ 7.130,00</dd></div>
+          <div class="par"><dt>Dezorzi</dt><dd class="mono">R$ 6.850,00</dd></div>
+          <div class="par"><dt>Tactus</dt><dd class="mono">R$ 1.096,00</dd></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ NOTAS ═══════════ -->
+  <section class="cena" id="cena-notas" hidden>
+    <div class="faixa-alta">
+      <div>
+        <h1>Notas</h1>
+        <p>Selecione uma linha — o detalhe abre ao lado, sem janela nenhuma</p>
+      </div>
+      <div class="acoes"><button class="acao" data-ir="emitir">Emitir NFS-e</button></div>
+    </div>
+
+    <div class="medidores" id="medidores-notas"></div>
+
+    <div class="divisao">
+      <div class="painel">
+        <div class="ferramentas">
+          <div class="busca">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="busca" type="search" placeholder="Tomador, CNPJ, nº, valor…" aria-label="Buscar">
+          </div>
+          <div class="periodo"><b>De</b> 01/08/2026</div>
+          <div class="periodo"><b>Até</b> 29/08/2026</div>
+        </div>
+        <div class="linhas" id="lista"></div>
+        <div class="rodape-lista">
+          <span id="contagem">—</span>
+          <span class="soma">À vista: <b class="mono" id="soma">—</b></span>
+        </div>
+      </div>
+
+      <div id="painel-detalhe"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ EMITIR ═══════════ -->
+  <section class="cena" id="cena-emitir" hidden>
+    <div class="faixa-alta">
+      <div>
+        <h1>Emitir NFS-e</h1>
+        <p>Quatro passos — o resumo acompanha embaixo</p>
+      </div>
+    </div>
+
+    <div class="espinha">
+      <div class="degrau" data-estado="feito"><span class="n">✓</span><b>Tomador</b><span>Metalúrgica Bandeirantes</span></div>
+      <div class="degrau" data-estado="agora"><span class="n">2</span><b>Serviço</b><span>código e descrição</span></div>
+      <div class="degrau"><span class="n">3</span><b>Reforma IBS/CBS</b><span>NBS preenche o resto</span></div>
+      <div class="degrau"><span class="n">4</span><b>Valores</b><span>ISS calculado na hora</span></div>
+    </div>
+
+    <div class="painel">
+      <div class="formulario">
+        <div class="campo largo">
+          <label for="cod">Código do serviço</label>
+          <div class="envolto">
+            <select id="cod">
+              <option>14.05/107120/1581 — Restauração, recondicionamento</option>
+              <option>07.02/103141/1291 — Execução por administração</option>
+            </select>
+          </div>
+          <p class="dica">Lista do portal para esta empresa</p>
+        </div>
+
+        <div class="campo largo">
+          <label for="desc">Descrição do serviço</label>
+          <div class="envolto"><input id="desc" value="Restauração de matrizes e ferramental — lote 44"></div>
+          <p class="dica">Quebras de linha e espaçamento saem na nota como digitados</p>
+        </div>
+
+        <div class="campo">
+          <label for="nbs">Código NBS</label>
+          <div class="envolto"><select id="nbs"><option>1.1204.10.00 — Serviços de manutenção</option></select></div>
+        </div>
+        <div class="campo">
+          <label for="indop">Indicador da operação</label>
+          <div class="envolto"><input id="indop" class="mono" value="1" readonly></div>
+          <p class="dica">Preenchido pela planilha</p>
+        </div>
+        <div class="campo">
+          <label for="classe">Classificação tributária</label>
+          <div class="envolto"><input id="classe" class="mono" value="000001" readonly></div>
+          <p class="dica">Preenchida pela planilha</p>
+        </div>
+        <div class="campo">
+          <label for="cst">Situação tributária (CST)</label>
+          <div class="envolto"><input id="cst" class="mono" value="000"></div>
+          <p class="dica">Padrão 000 — não vem da planilha</p>
+        </div>
+
+        <div class="campo">
+          <label for="valor">Valor do serviço</label>
+          <div class="envolto"><span style="color:var(--tinta-3)">R$</span><input id="valor" class="mono" value="4.820,00" inputmode="decimal"></div>
+        </div>
+        <div class="campo">
+          <label for="aliq">Alíquota</label>
+          <div class="envolto"><input id="aliq" class="mono" value="2,00" inputmode="decimal"><span style="color:var(--tinta-3)">%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="resumo">
+      <div class="item"><span>Serviço</span><b class="mono" id="r-servico">R$ 4.820,00</b></div>
+      <div class="item"><span>ISS 2,00%</span><b class="mono" id="r-iss">R$ 96,40</b></div>
+      <div class="item destaque"><span>Líquido</span><b class="mono" id="r-liquido">R$ 4.723,60</b></div>
+      <div class="fim">
+        <span class="selo viva" style="--tom: var(--ok)"><span class="ponto"></span>Pronto para emitir</span>
+        <button class="acao">Emitir agora</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="aviso-molde">
+    <b>Maquete.</b> Dados fictícios. O que muda em relação ao programa de hoje:
+    sai a barra lateral e entra uma barra de comando no topo; sai a janela de
+    detalhes e entra um painel que abre ao lado da lista; o formulário de
+    emissão vira um fluxo de quatro degraus com resumo fixo embaixo. Tudo aqui
+    é clicável — troque de aba, clique numa linha, filtre pelos medidores,
+    digite o valor, alterne o tema.
+  </p>
+</main>
+
+<script>
+"use strict";
+
+const NOTAS = [
+  { id:"1", emp:"Mundial Usinagem LTDA", ccm:"CCM 61.234-5", tom:"METALÚRGICA BANDEIRANTES S.A.", doc:"12.345.678/0001-90",
+    srv:"Restauração de matrizes e ferramental", v:4820, d:"29/08/2026", quando:"hoje", s:"emitida", n:"1412", cv:"9P5VBYVXL" },
+  { id:"2", emp:"Dezorzi Serviços Industriais", ccm:"CCM 88.401-2", tom:"AUTO PEÇAS VERA CRUZ ME", doc:"09.887.221/0001-14",
+    srv:"Usinagem CNC sob medida", v:1250, d:"29/08/2026", quando:"hoje", s:"emitida", n:"1411", cv:"B5AALJDQQ" },
+  { id:"3", emp:"Mundial Usinagem LTDA", ccm:"CCM 61.234-5", tom:"INDÚSTRIA KAPPA LTDA", doc:"33.109.554/0001-72",
+    srv:"Torneamento de eixos — lote 44", v:2310.5, d:"28/08/2026", quando:"ontem", s:"rascunho" },
+  { id:"4", emp:"Dezorzi Serviços Industriais", ccm:"CCM 88.401-2", tom:"TRANSPORTES VELA LTDA", doc:"47.001.882/0001-05",
+    srv:"Manutenção preventiva de prensa", v:5600, d:"27/08/2026", quando:"há 2 dias", s:"recusada",
+    erro:{ codigo:"E181", texto:"O valor líquido da NFS-e deve ser o resultado da expressão (valor dos serviços − PIS − COFINS − INSS − IR − CSLL − outras retenções − ISS retido − desconto incondicionado)." } },
+  { id:"5", emp:"Tactus Comércio LTDA", ccm:"CCM 45.997-0", tom:"COMERCIAL IPIRANGA LTDA", doc:"22.554.019/0001-38",
+    srv:"Solda e acabamento", v:780, d:"26/08/2026", quando:"há 3 dias", s:"emitida", n:"1410", cv:"M6OJCSHGE" },
+  { id:"6", emp:"Tactus Comércio LTDA", ccm:"CCM 45.997-0", tom:"FERRAMENTARIA ALFA ME", doc:"18.220.774/0001-61",
+    srv:"Corte a laser — chapa 3 mm", v:316, d:"25/08/2026", quando:"há 4 dias", s:"recusada",
+    erro:{ codigo:"E402", texto:"O portal não respondeu no formato esperado. A sessão pode ter expirado — entre de novo e reenvie." } },
+];
+
+const TOM = { emitida:"var(--ok)", rascunho:"var(--tinta-3)", recusada:"var(--falha)" };
+const ROTULO = { emitida:"Emitida", rascunho:"Rascunho", recusada:"Recusada" };
+const GRUPOS = [
+  { chave:"todas", nome:"Todas", tom:"var(--pulso)" },
+  { chave:"emitida", nome:"Emitidas", tom:"var(--ok)" },
+  { chave:"rascunho", nome:"Rascunhos", tom:"var(--tinta-3)" },
+  { chave:"recusada", nome:"Recusadas", tom:"var(--falha)" },
+];
+
+const estado = { cena:"painel", filtro:"todas", busca:"", escolhida:null };
+const $ = s => document.querySelector(s);
+const dinheiro = n => n.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+/* ── navegação com o realce deslizando ── */
+function moverMarcador() {
+  const ativo = $("#navegador button[aria-selected='true']");
+  const marcador = $("#marcador");
+  marcador.style.width = ativo.offsetWidth + "px";
+  marcador.style.transform = `translateX(${ativo.offsetLeft - 4}px)`;
+}
+
+function irPara(cena) {
+  estado.cena = cena;
+  document.querySelectorAll("#navegador button").forEach(b =>
+    b.setAttribute("aria-selected", String(b.dataset.cena === cena)));
+  ["painel","notas","emitir"].forEach(nome => {
+    const alvo = document.getElementById("cena-" + nome);
+    alvo.hidden = nome !== cena;
+    if (nome === cena) { alvo.classList.remove("cena"); void alvo.offsetWidth; alvo.classList.add("cena"); }
+  });
+  moverMarcador();
+}
+
+document.querySelectorAll("#navegador button").forEach(b =>
+  b.addEventListener("click", () => irPara(b.dataset.cena)));
+document.querySelectorAll("[data-ir]").forEach(b =>
+  b.addEventListener("click", () => irPara(b.dataset.ir)));
+
+/* ── medidores que filtram ── */
+function medidores(destino, clicavel) {
+  const base = NOTAS;
+  destino.innerHTML = GRUPOS.map(g => {
+    const lista = g.chave === "todas" ? base : base.filter(n => n.s === g.chave);
+    const soma = lista.reduce((t, n) => t + n.v, 0);
+    const marcado = clicavel && estado.filtro === g.chave;
+    return `<button class="medidor" style="--tom:${g.tom}" data-grupo="${g.chave}"
+              aria-pressed="${marcado}" ${clicavel ? "" : "disabled"}>
+        <span class="rotulo">${g.nome}</span>
+        <span class="cifra mono" data-alvo="${lista.length}">0</span>
+        <span class="nota mono">R$ ${dinheiro(soma)}</span>
+        <span class="barra"></span>
+      </button>`;
+  }).join("");
+  destino.querySelectorAll(".medidor").forEach(m => {
+    m.addEventListener("mousemove", e => {
+      const c = m.getBoundingClientRect();
+      m.style.setProperty("--mx", (e.clientX - c.left) + "px");
+      m.style.setProperty("--my", (e.clientY - c.top) + "px");
+    });
+    if (clicavel) m.addEventListener("click", () => {
+      estado.filtro = estado.filtro === m.dataset.grupo ? "todas" : m.dataset.grupo;
+      medidores($("#medidores-notas"), true);
+      desenharLista();
+    });
+  });
+  contar(destino);
+}
+
+/* números que sobem até o valor — o painel "liga" quando abre */
+function contar(dentro) {
+  dentro.querySelectorAll("[data-alvo]").forEach(alvo => {
+    const fim = Number(alvo.dataset.alvo);
+    if (!fim) { alvo.textContent = "0"; return; }
+    const inicio = performance.now(), duracao = 620;
+    const passo = agora => {
+      const t = Math.min(1, (agora - inicio) / duracao);
+      alvo.textContent = Math.round(fim * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+  });
+}
+
+/* ── lista ── */
+function visiveis() {
+  const termo = estado.busca.trim().toLowerCase();
+  return NOTAS.filter(n => {
+    if (estado.filtro !== "todas" && n.s !== estado.filtro) return false;
+    if (!termo) return true;
+    const alvo = [n.emp, n.tom, n.doc, n.srv, n.n, dinheiro(n.v), n.d, ROTULO[n.s]].join(" ").toLowerCase();
+    return termo.split(/\s+/).every(p => alvo.includes(p));
+  });
+}
+
+function linhaHTML(n) {
+  return `<button class="linha" data-id="${n.id}" style="--tom:${TOM[n.s]}"
+            aria-selected="${estado.escolhida === n.id}">
+    <span class="risco"></span>
+    <span class="quem"><b></b><span></span></span>
+    <span class="servico"></span>
+    <span class="cifra mono"><small>R$</small>${dinheiro(n.v)}</span>
+    <span><span class="selo ${n.s === "emitida" ? "viva" : ""}" style="--tom:${TOM[n.s]}">
+      <span class="ponto"></span>${ROTULO[n.s]}${n.n ? " · nº " + n.n : ""}</span></span>
+  </button>`;
+}
+
+function preencherTextos(dentro, lista) {
+  lista.forEach((n, i) => {
+    const linha = dentro.children[i];
+    if (!linha) return;
+    linha.querySelector(".quem b").textContent = n.tom;
+    linha.querySelector(".quem span").textContent = `${n.emp} · ${n.doc}`;
+    linha.querySelector(".servico").textContent = n.srv;
+  });
+}
+
+function desenharLista() {
+  const lista = visiveis();
+  const dentro = $("#lista");
+  dentro.innerHTML = lista.map(linhaHTML).join("") ||
+    `<div class="vazio-detalhe"><b>Nenhuma nota com esses filtros</b><p>Tente outra situação, outra empresa, ou limpe a busca.</p></div>`;
+  preencherTextos(dentro, lista);
+  dentro.querySelectorAll(".linha").forEach(l => l.addEventListener("click", () => {
+    estado.escolhida = estado.escolhida === l.dataset.id ? null : l.dataset.id;
+    desenharLista(); desenharDetalhe();
+  }));
+  $("#contagem").textContent = `${lista.length} de ${NOTAS.length} nota(s)`;
+  $("#soma").textContent = "R$ " + dinheiro(lista.reduce((t, n) => t + n.v, 0));
+}
+
+/* ── detalhe ao lado, no lugar da janela ── */
+function desenharDetalhe() {
+  const alvo = $("#painel-detalhe");
+  const n = NOTAS.find(x => x.id === estado.escolhida);
+  if (!n) {
+    alvo.innerHTML = `<div class="detalhe" style="--tom:var(--fio)"><div class="vazio-detalhe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+      <b>Nenhuma nota escolhida</b><p>Clique numa linha para ver tudo sobre ela aqui — inclusive por que foi recusada.</p>
+    </div></div>`;
+    return;
+  }
+  const iss = n.v * 0.02;
+  alvo.innerHTML = `<div class="detalhe" style="--tom:${TOM[n.s]}">
+    <div class="capa">
+      <div class="numero mono">${n.n ? "nº " + n.n : ROTULO[n.s]}</div>
+      <div class="cliente" data-cliente></div>
+    </div>
+    <div class="corpo">
+      <div class="par"><dt>Situação</dt><dd><span class="selo ${n.s === "emitida" ? "viva" : ""}" style="--tom:${TOM[n.s]}"><span class="ponto"></span>${ROTULO[n.s]}</span></dd></div>
+      <div class="par"><dt>Prestador</dt><dd data-emp></dd></div>
+      <div class="par"><dt>Serviço</dt><dd data-srv></dd></div>
+      <div class="par"><dt>Valor</dt><dd class="mono">R$ ${dinheiro(n.v)}</dd></div>
+      <div class="par"><dt>ISS 2,00%</dt><dd class="mono">R$ ${dinheiro(iss)}</dd></div>
+      <div class="par"><dt>Emissão</dt><dd class="mono">${n.d} <span style="color:var(--tinta-3)">· ${n.quando}</span></dd></div>
+      ${n.cv ? `<div class="par"><dt>Verificação</dt><dd class="mono">${n.cv}</dd></div>` : ""}
+    </div>
+    ${n.erro ? `<div class="porque"><h4>Por que foi recusada</h4>
+       <p><code>${n.erro.codigo}</code> — <span data-erro></span></p></div>` : ""}
+    <div class="botoes">
+      <button class="acao calma" ${n.n ? "" : "disabled"}>Abrir em PDF</button>
+      <button class="acao" ${n.s === "emitida" ? "disabled" : ""}>${n.s === "recusada" ? "Reenviar" : "Enviar"}</button>
+    </div>
+  </div>`;
+  alvo.querySelector("[data-cliente]").textContent = n.tom;
+  alvo.querySelector("[data-emp]").textContent = `${n.emp} · ${n.ccm}`;
+  alvo.querySelector("[data-srv]").textContent = n.srv;
+  if (n.erro) alvo.querySelector("[data-erro]").textContent = n.erro.texto;
+}
+
+/* ── recentes no painel ── */
+function desenharRecentes() {
+  const lista = NOTAS.slice(0, 4);
+  const dentro = $("#recentes");
+  dentro.innerHTML = lista.map(linhaHTML).join("");
+  preencherTextos(dentro, lista);
+}
+
+/* ── resumo vivo da emissão ── */
+function recalcular() {
+  const valor = Number(($("#valor").value || "0").replace(/\./g, "").replace(",", ".")) || 0;
+  const aliq = Number(($("#aliq").value || "0").replace(",", ".")) || 0;
+  const iss = valor * aliq / 100;
+  $("#r-servico").textContent = "R$ " + dinheiro(valor);
+  $("#r-iss").textContent = "R$ " + dinheiro(iss);
+  $("#r-liquido").textContent = "R$ " + dinheiro(valor - iss);
+  document.querySelectorAll(".resumo .item span")[1].textContent =
+    `ISS ${aliq.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}%`;
+}
+["valor", "aliq"].forEach(id => $("#" + id).addEventListener("input", recalcular));
+
+$("#busca").addEventListener("input", e => { estado.busca = e.target.value; desenharLista(); });
+$("#tema").addEventListener("click", () => {
+  const raiz = document.documentElement;
+  const escuro = raiz.dataset.theme ? raiz.dataset.theme === "dark"
+    : !matchMedia("(prefers-color-scheme: light)").matches;
+  raiz.dataset.theme = escuro ? "light" : "dark";
+});
+addEventListener("resize", moverMarcador);
+
+medidores($("#medidores-painel"), false);
+medidores($("#medidores-notas"), true);
+desenharRecentes();
+desenharLista();
+desenharDetalhe();
+recalcular();
+requestAnimationFrame(moverMarcador);
+// A fonte muda a largura dos rótulos; sem esperar por ela o realce
+// nasce do tamanho errado e fica desencontrado do texto.
+if (document.fonts) document.fonts.ready.then(moverMarcador);
+addEventListener('load', moverMarcador);
+</script>

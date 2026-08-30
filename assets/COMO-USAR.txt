@@ -1,0 +1,70 @@
+DEZORZI® · EMISSOR DE NFS-e
+===========================
+
+Para abrir: dois cliques em "Dezorzi NFS-e.exe". Não precisa instalar Python
+nem nada.
+
+DUAS FORMAS DO MESMO PROGRAMA
+-----------------------------
+Na pasta "executavel" existem os dois; use o que for mais prático.
+
+  Dezorzi NFS-e\            a pasta. Copie ela INTEIRA. Abre em ~3 segundos.
+  Dezorzi NFS-e.exe         um arquivo só. Copie só ele — na primeira abertura
+                            ele cria config\ e data\ ao lado de si. Abre em
+                            ~6 segundos, porque se descompacta a cada vez.
+
+O arquivo único é mais fácil de mandar por e-mail ou pendrive; a pasta é mais
+rápida no dia a dia. Depois da primeira abertura, os dois são iguais.
+
+Em qualquer um dos casos, ponha o programa numa pasta do disco onde ele possa
+gravar — Área de Trabalho ou Documentos servem. Em "Arquivos de Programas" o
+Windows bloqueia a gravação e as notas não são salvas (o programa avisa).
+
+O QUE FICA AO LADO
+------------------
+  config\             modelos de emissão, alíquotas, municípios
+  data\               as notas emitidas ficam aqui
+  .env                ajustes
+  _internal\          (só na versão em pasta) as peças do programa — não mexa
+
+ATENÇÃO: A TRANSMISSÃO ESTÁ ATIVA
+---------------------------------
+Esta cópia emite de verdade. Ao clicar em emitir, a nota vai para a prefeitura e
+passa a existir — nota emitida não se apaga, só se cancela, e nem todo caso
+permite cancelamento.
+
+A barra lateral mostra o estado em que o programa está:
+
+    "Transmissão ativa"  (laranja)  -> envia de verdade
+    "Modo seguro"        (verde)    -> monta e confere, mas não envia
+
+Para treinar, apresentar ou testar sem risco, vá em Configurações e clique em
+"Voltar ao modo seguro". O mesmo botão liga de novo quando quiser.
+
+A SENHA
+-------
+Não vem junto, de propósito: esta pasta pode ir para um pendrive, e a senha iria
+com ela. Digite na tela de entrada; ela fica só na memória enquanto o programa
+está aberto.
+
+AS NOTAS
+--------
+Cada cópia do programa tem o histórico dela, na pasta data\. Para levar as notas
+já emitidas junto, copie o conteúdo do data\ da máquina de origem. Para várias
+cópias apontarem para o mesmo histórico, use NFSE_HOME no .env.
+
+SE ALGUMA COISA DER ERRADO
+--------------------------
+O programa mantém um diário do que fez, em data\registro.txt. Ele registra as
+emissões, a abertura do layout de impressão, a chegada do PDF e qualquer erro —
+sem senha, sem dado sigiloso, para poder ser enviado sem receio.
+
+Pelo programa: menu Ajuda > Diário do programa.
+
+Se uma nota sair e o PDF não aparecer, é esse arquivo que diz o motivo.
+
+SE O WINDOWS RECLAMAR
+---------------------
+Programa sem assinatura digital costuma levar aviso do SmartScreen na primeira
+vez: "Mais informações" > "Executar assim mesmo". Antivírus corporativo pode
+barrar — nesse caso, peça para liberar a pasta.

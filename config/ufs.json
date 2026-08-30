@@ -1,0 +1,142 @@
+[
+  {
+    "codigo": "12",
+    "sigla": "AC",
+    "nome": "ACRE"
+  },
+  {
+    "codigo": "27",
+    "sigla": "AL",
+    "nome": "ALAGOAS"
+  },
+  {
+    "codigo": "13",
+    "sigla": "AM",
+    "nome": "AMAZONAS"
+  },
+  {
+    "codigo": "16",
+    "sigla": "AP",
+    "nome": "AMAPA"
+  },
+  {
+    "codigo": "29",
+    "sigla": "BA",
+    "nome": "BAHIA"
+  },
+  {
+    "codigo": "23",
+    "sigla": "CE",
+    "nome": "CEARA"
+  },
+  {
+    "codigo": "53",
+    "sigla": "DF",
+    "nome": "DISTRITO FEDERAL"
+  },
+  {
+    "codigo": "32",
+    "sigla": "ES",
+    "nome": "ESPIRITO SANTO"
+  },
+  {
+    "codigo": "99",
+    "sigla": "EX",
+    "nome": "EXTERIOR"
+  },
+  {
+    "codigo": "52",
+    "sigla": "GO",
+    "nome": "GOIAS"
+  },
+  {
+    "codigo": "21",
+    "sigla": "MA",
+    "nome": "MARANHAO"
+  },
+  {
+    "codigo": "31",
+    "sigla": "MG",
+    "nome": "MINAS GERAIS"
+  },
+  {
+    "codigo": "50",
+    "sigla": "MS",
+    "nome": "MATO GROSSO DO SUL"
+  },
+  {
+    "codigo": "51",
+    "sigla": "MT",
+    "nome": "MATO GROSSO"
+  },
+  {
+    "codigo": "15",
+    "sigla": "PA",
+    "nome": "PARA"
+  },
+  {
+    "codigo": "25",
+    "sigla": "PB",
+    "nome": "PARAIBA"
+  },
+  {
+    "codigo": "26",
+    "sigla": "PE",
+    "nome": "PERNAMBUCO"
+  },
+  {
+    "codigo": "22",
+    "sigla": "PI",
+    "nome": "PIAUI"
+  },
+  {
+    "codigo": "41",
+    "sigla": "PR",
+    "nome": "PARANA"
+  },
+  {
+    "codigo": "33",
+    "sigla": "RJ",
+    "nome": "RIO DE JANEIRO"
+  },
+  {
+    "codigo": "24",
+    "sigla": "RN",
+    "nome": "RIO GRANDE DO NORTE"
+  },
+  {
+    "codigo": "11",
+    "sigla": "RO",
+    "nome": "RONDONIA"
+  },
+  {
+    "codigo": "14",
+    "sigla": "RR",
+    "nome": "RORAIMA"
+  },
+  {
+    "codigo": "43",
+    "sigla": "RS",
+    "nome": "RIO GRANDE DO SUL"
+  },
+  {
+    "codigo": "42",
+    "sigla": "SC",
+    "nome": "SANTA CATARINA"
+  },
+  {
+    "codigo": "28",
+    "sigla": "SE",
+    "nome": "SERGIPE"
+  },
+  {
+    "codigo": "35",
+    "sigla": "SP",
+    "nome": "SAO PAULO"
+  },
+  {
+    "codigo": "17",
+    "sigla": "TO",
+    "nome": "TOCANTINS"
+  }
+]

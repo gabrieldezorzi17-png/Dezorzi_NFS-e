@@ -1,0 +1,108 @@
+CÓDIGOS DA REFORMA TRIBUTÁRIA — lidos do portal de São Bernardo
+
+=== NBS — 675 códigos ===
+  1.0401.23.00     Serviços de transporte aquaviário para passeios turísticos (sightseeing)
+  1.1703.91.00     Serviços de oferta de jogos de acesso imediato (on-line)
+  1.1703.92.00     Serviços de oferta de conteúdo de portais de busca na rede mundial de computadores
+  1.1703.99.00     Serviços de oferta de outros conteúdos de acesso imediato (on-line) não classificados em s
+  1.1704.10.00     Serviços de agências de notícias para jornais e periódicos
+  1.1704.20.00     Serviços de agências de notícias para mídia audiovisual
+  1.1705.20.00     Serviços de arquivo
+  1.1801.11.00     Serviço de recrutamento e seleção de profissionais executivos
+  1.1801.12.00     Serviço de recrutamento e seleção de profissionais, exceto executivos
+  1.1801.21.00     Serviços de fornecimento de mão de obra terceirizada, exceto temporária
+  1.1801.22.00     Serviços de fornecimento de mão de obra temporária
+  1.1801.29.00     Serviços de fornecimento de mão de obra não classificados em subposições anteriores
+  1.1802.10.00     Serviços de investigação
+  1.1802.20.00     Serviços de consultoria em segurança
+  1.1802.30.00     Serviços de sistemas de segurança
+  1.1802.40.00     Serviços de carro-forte
+  1.1802.50.00     Serviços de guarda e escolta armada
+  1.1802.90.00     Serviços de segurança não classificados em subposições anteriores
+  1.1803.10.00     Serviços gerais de limpeza
+  1.1803.21.00     Serviços de desinfecção e extermínio de pragas
+  1.1803.22.00     Serviços de limpeza de janelas
+  1.1803.29.00     Serviços especializados de limpeza não classificados em subposições anteriores
+  1.1804.00.00     Serviços de acondicionamento e empacotamento
+  1.1805.11.00     Serviços de reservas para transporte aéreo de passageiros
+  1.1805.12.00     Serviços de reservas para transporte ferroviário de passageiros
+  1.1805.13.00     Serviços de reservas para transporte rodoviário de passageiros
+  1.1805.14.00     Serviços de reservas de carros de aluguel
+  1.1805.19.00     Serviços de reservas para transporte de passageiros não classificados em subposições anter
+  1.1805.21.00     Serviços de reservas de hospedagem, exceto em unidades compartilhadas
+  1.1805.22.00     Serviços de reservas e intercâmbio de unidades compartilhadas (time-share)
+  1.1805.23.00     Serviços de reservas em cruzeiros
+  1.1805.24.00     Serviços de reservas de pacotes turísticos
+  1.1805.31.00     Serviços de reservas para centros de convenções, auditórios e salas de exposições
+  1.1805.32.00     Serviços de reservas de ingressos para eventos de entretenimento e recreativos
+  1.1805.39.00     Serviços de reservas não classificados em subposições anteriores
+  1.1805.40.00     Serviços de operadoras de turismo
+  1.1805.50.00     Serviços de guias turísticos
+  1.1805.61.00     Serviços de promoção turística
+  1.1805.62.00     Serviços de informação a visitantes
+  1.1806.10.00     Serviços de informação cadastral e análise de crédito
+  ... e mais 635 (a lista completa está no JSON)
+
+=== INDICADOR OPERACAO — 11 códigos ===
+  030102           local da prestação
+  030103           050101
+  050102           050103
+  050104           301001
+  30101            40101
+  030104           100101
+  100501           10100
+  20301            50100
+  50101            50201
+  60101            70100
+  80101            via explorada
+
+=== SITUACAO TRIBUTARIA — 18 códigos ===
+  000              Tributação integral
+  010              Tributação com alíquotas uniformes
+  011              Tributação com alíquotas uniformes reduzidas
+  200              Alíquota reduzida
+  220              Alíquota fixa
+  222              Redução de base de cálculo
+  400              Isenção
+  410              Imunidade e não incidência
+  510              Diferimento
+  515              Diferimento com redução de alíquota
+  550              Suspensão
+  830              Exclusão de base de cálculo
+  221              Alíquota fixa proporcional
+  620              Tributação monofásica
+  800              Transferência de crédito
+  810              Ajuste de IBS na ZFM
+  811              Ajustes
+  820              Tributação em declaração de regime específico
+
+=== CLASSIFICACAO TRIBUTARIA — 29 códigos ===
+  010002           Operações do serviço financeiro
+  011005           Planos de assistência à saúde de animais domésticos
+  200016           Prestação de serviços de pesquisa e desenvolvimento por Instituição Científica, Tecnológic
+  200025           Fornecimento dos serviços de educação relacionados ao Programa Universidade para Todos (Pr
+  200028           Fornecimento dos serviços de educação (Anexo II)
+  200037           Fornecimento de serviços ambientais de conservação ou recuperação da vegetação nativa
+  200038           Fornecimento dos insumos agropecuários e aquícolas (Anexo IX)
+  200041           Fornecimento de serviço de educação desportiva (art. 141. I)
+  200021           Serviços de transporte público coletivo de passageiros ferroviário e hidroviário
+  000001           Situações tributadas integralmente pelo IBS e CBS.
+  000002           Exploração de via
+  011001           Planos de assistência funerária.
+  011002           Planos de assistência à saúde
+  011003           Intermediação de planos de assistência à saúde
+  200027           Operações de locação, cessão onerosa e arrendamento de bens imóveis
+  200029           Fornecimento dos serviços de saúde humana (Anexo III)
+  200039           Fornecimento dos serviços e o licenciamento ou cessão dos direitos destinados às produções
+  200040           Fornecimento de serviços de comunicação institucional à administração pública
+  200042           Fornecimento de serviço de educação desportiva (art. 141. II)
+  410007           Fornecimentos realizados por partidos políticos
+  410004           Exportações de bens e serviços
+  200043           Fornecimento à administração pública dos serviços e dos bens relativos à soberania (Anexo 
+  200044           Operações e prestações de serviços de segurança da informação e segurança cibernética dese
+  200045           Operações relacionadas a projetos de reabilitação urbana de zonas históricas e de áreas cr
+  200046           Operações com bens imóveis
+  200048           Hotelaria, Parques de Diversão e Parques Temáticos
+  200051           Agências de Turismo
+  200052           Prestação de serviços de profissões intelectuais
+  400001           Fornecimento de serviços de transporte público coletivo de passageiros rodoviário e metrov

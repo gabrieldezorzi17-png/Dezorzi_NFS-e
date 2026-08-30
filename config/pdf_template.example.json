@@ -1,0 +1,24 @@
+{
+  "_comentario": [
+    "Endereço do PDF da NFS-e em São Bernardo do Campo.",
+    "Passo 1: 'url' abre a tela do visualizador (devolve HTML).",
+    "Passo 2: o formulário 'exportar' dessa página é reenviado em 'exportacao',",
+    "         e é essa resposta que traz o PDF.",
+    "Marcadores: {{numero}}, {{codigo_verificacao}}, {{relatorio}},",
+    "            {{prestador.inscricao}}, {{env:VARIAVEL}}."
+  ],
+  "url": "https://visualizar.isssbc.com.br/report/consultarNota?__report={{relatorio}}&cdVerificacao={{codigo_verificacao}}&numNota={{numero}}&cnpjPrestador=null",
+  "method": "GET",
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "text/html,application/xhtml+xml,*/*"
+  },
+  "exportacao": {
+    "url": "https://visualizar.isssbc.com.br/report/exportacao",
+    "formulario": "exportar",
+    "campos": {
+      "imprime": "0",
+      "tipo": "pdf"
+    }
+  }
+}

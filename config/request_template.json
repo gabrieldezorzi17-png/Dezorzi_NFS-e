@@ -1,0 +1,1 @@
+{"method": "POST", "url": "https://nfse.isssbc.com.br/nfseweb/nfse", "headers": {"Content-Type": "text/x-gwt-rpc", "Cookie": "{{env:NFSE_COOKIE}}"}, "fixed": {"tomador.documento": "11222333000181", "servico.codigo": "14.05/107120/1581"}, "body": "7|0|2|{{servico.valor}}|{{servico.descricao}}|1|"}

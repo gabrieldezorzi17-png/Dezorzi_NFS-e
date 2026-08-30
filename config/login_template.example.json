@@ -1,0 +1,44 @@
+{
+  "_comentario": [
+    "Gere o arquivo real com:",
+    "  python import_curl.py captura/login.txt --login --usuario SEU_USUARIO --senha SUA_SENHA",
+    "As credenciais ficam so no .env. Substitua method/url/headers/body pelo que a captura",
+    "do login mostrar; o bloco 'probe' abaixo ja esta pronto e nao precisa mudar."
+  ],
+
+  "method": "POST",
+  "url": "https://nfse.isssbc.com.br/COLE_AQUI_O_ENDPOINT_DE_LOGIN",
+  "headers": {
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Accept": "*/*",
+    "Origin": "https://nfse.isssbc.com.br",
+    "Referer": "https://nfse.isssbc.com.br/"
+  },
+  "escape": "raw",
+  "body": "usuario={{env:NFSE_USUARIO|url}}&senha={{env:NFSE_SENHA|url}}",
+
+  "success": {
+    "status": [200, 302],
+    "body_not_contains": "senha inv"
+  },
+
+  "_probe_comentario": [
+    "getSession e uma chamada barata que so responde direito com sessao valida.",
+    "O GWT-RPC prefixa a resposta com //OK quando deu certo e //EX quando falhou,",
+    "entao body_contains: '//OK' distingue sessao viva de sessao expirada."
+  ],
+  "probe": {
+    "method": "POST",
+    "url": "https://nfse.isssbc.com.br/nfseweb/nfse",
+    "headers": {
+      "Content-Type": "text/x-gwt-rpc; charset=UTF-8",
+      "X-GWT-Module-Base": "https://nfse.isssbc.com.br/nfseweb/",
+      "X-GWT-Permutation": "{{env:NFSE_GWT_PERMUTATION}}",
+      "Origin": "https://nfse.isssbc.com.br",
+      "Referer": "https://nfse.isssbc.com.br/"
+    },
+    "body": "7|0|4|https://nfse.isssbc.com.br/nfseweb/|{{env:NFSE_GWT_POLICY}}|br.com.eicon.nfseweb.client.service.ControllerService|getSession|1|2|3|4|0|",
+    "status": [200],
+    "body_contains": "//OK"
+  }
+}

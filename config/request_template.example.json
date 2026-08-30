@@ -1,0 +1,14 @@
+{
+  "_comentario": "Gere o arquivo real com: python import_curl.py emitir.txt --map tomador.documento=... --map servico.valor_virgula=... Este exemplo só mostra a convenção.",
+  "method": "POST",
+  "url": "https://nfse.isssbc.com.br/nfseweb/nfse",
+  "headers": {
+    "Accept": "*/*",
+    "Content-Type": "text/x-gwt-rpc; charset=UTF-8",
+    "X-GWT-Module-Base": "https://nfse.isssbc.com.br/nfseweb/",
+    "X-GWT-Permutation": "{{env:NFSE_GWT_PERMUTATION}}",
+    "Cookie": "{{env:NFSE_COOKIE}}"
+  },
+  "escape": "gwt",
+  "body": "7|0|N|https://nfse.isssbc.com.br/nfseweb/|HASH|br.gov.sbc.NfseService|emitirNfs|{{tomador.documento}}|{{servico.descricao}}|{{servico.valor_virgula}}|{{competencia}}|1|2|3|4|"
+}

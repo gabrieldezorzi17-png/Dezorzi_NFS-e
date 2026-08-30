@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Tokens
+ * ------------------------------------------------------------------ *
+ * Uma cor só existe aqui. Componente nenhum escreve hexadecimal —
+ * é o que mantém os dois temas coerentes quando a tela cresce.
+ * ------------------------------------------------------------------ */
+
+@theme {
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "Cascadia Code", Consolas, ui-monospace, monospace;
+
+  --radius-card: 0.875rem;   /* vira a classe rounded-card */
+  --radius-pill: 9999px;      /* vira a classe rounded-pill */
+
+  /* Molas — os mesmos números da física do Framer Motion, para CSS e JS
+     não discordarem sobre o que é "rápido". */
+  --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  /* Claro — Slate 50 de fundo, branco puro nas superfícies */
+  --fundo: 248 250 252;
+  --superficie: 255 255 255;
+  --superficie-alta: 241 245 249;
+  --borda: 226 232 240;
+  --borda-forte: 203 213 225;
+
+  --tinta: 15 23 42;
+  --tinta-2: 71 85 105;
+  --tinta-3: 148 163 184;
+
+  --primaria: 37 99 235;        /* Azul Royal */
+  --primaria-forte: 29 78 216;
+  --primaria-fraca: 219 234 254;
+
+  --sucesso: 16 185 129;        /* Verde Esmeralda */
+  --sucesso-tinta: 6 95 70;
+  --sucesso-fundo: 209 250 229;
+
+  --alerta-tinta: 146 64 14;
+  --alerta-fundo: 254 243 199;
+
+  --falha: 225 29 72;           /* Vermelho Rubi */
+  --falha-tinta: 153 27 27;
+  --falha-fundo: 254 226 226;
+
+  --neutro-tinta: 71 85 105;
+  --neutro-fundo: 241 245 249;
+
+  /* O vidro: no claro o desfoque precisa de mais opacidade, senão o texto
+     por baixo atravessa e o cartão fica sujo. */
+  --vidro: 255 255 255;
+  --vidro-opacidade: 0.82;
+  --vidro-borda: 226 232 240;
+  --luz: 37 99 235;             /* cor do holofote que segue o cursor */
+  --luz-forca: 0.10;
+}
+
+.dark {
+  /* Escuro — Obsidian de fundo, Slate profundo nas superfícies */
+  --fundo: 9 13 22;
+  --superficie: 19 27 46;
+  --superficie-alta: 27 37 60;
+  --borda: 39 51 77;
+  --borda-forte: 55 71 102;
+
+  --tinta: 241 245 249;
+  --tinta-2: 203 213 225;
+  --tinta-3: 148 163 184;
+
+  --primaria: 59 130 246;       /* Azul Elétrico */
+  --primaria-forte: 37 99 235;
+  --primaria-fraca: 30 58 138;
+
+  --sucesso: 16 185 129;
+  --sucesso-tinta: 110 231 183;
+  --sucesso-fundo: 6 78 59;
+
+  --alerta-tinta: 252 211 77;
+  --alerta-fundo: 120 53 15;
+
+  --falha: 244 63 94;
+  --falha-tinta: 252 165 165;
+  --falha-fundo: 127 29 29;
+
+  --neutro-tinta: 203 213 225;
+  --neutro-fundo: 39 51 77;
+
+  --vidro: 19 27 46;
+  --vidro-opacidade: 0.72;
+  --vidro-borda: 255 255 255;   /* usado com alfa baixo: border-white/10 */
+  --luz: 59 130 246;
+  --luz-forca: 0.16;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--borda));
+  }
+
+  body {
+    background-color: rgb(var(--fundo));
+    color: rgb(var(--tinta));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* A janela do Tauri não rola: quem rola é a área de conteúdo. Sem isto,
+       o arrastar-para-atualizar do WebView faz a tela inteira balançar. */
+    overscroll-behavior: none;
+  }
+
+  /* Respeita quem desligou animação no sistema. Não é detalhe: enjoo de
+     movimento é real, e a tela precisa continuar utilizável sem o brilho. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* O vidro. `backdrop-filter` é caro: aplicado em painel, não em cada
+     linha de tabela — mil elementos desfocando derrubam o quadro por
+     segundo que o resto da interface está tentando ganhar. */
+  .vidro {
+    background-color: rgb(var(--vidro) / var(--vidro-opacidade));
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid rgb(var(--vidro-borda) / 0.10);
+  }
+
+  html:not(.dark) .vidro {
+    border-color: rgb(var(--borda));
+  }
+
+  /* Holofote radial que acompanha o cursor. As coordenadas chegam por
+     variável CSS, escrita no mousemove — assim o efeito não recria o
+     componente React a cada pixel de movimento. */
+  .holofote::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 220ms var(--ease-suave);
+    background: radial-gradient(
+      480px circle at var(--cursor-x, 50%) var(--cursor-y, 50%),
+      rgb(var(--luz) / var(--luz-forca)),
+      transparent 42%
+    );
+    pointer-events: none;
+  }
+
+  .holofote:hover::before {
+    opacity: 1;
+  }
+
+  /* Borda iluminada do botão principal. Um gradiente girando por trás,
+     recortado a 1px pela máscara. */
+  .borda-viva::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--giro, 0deg),
+      transparent 0deg,
+      rgb(var(--primaria) / 0.9) 60deg,
+      transparent 140deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 220ms var(--ease-suave);
+    pointer-events: none;
+  }
+
+  .borda-viva:hover::after {
+    opacity: 1;
+    animation: girar 2.4s linear infinite;
+  }
+}
+
+@property --giro {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes girar {
+  to {
+    --giro: 360deg;
+  }
+}

@@ -1,0 +1,44 @@
+MARCA DEZORZI®
+==============
+
+ONDE A MARCA APARECE
+--------------------
+De propósito, em dois lugares só:
+
+  * o ícone da janela (barra de título e barra de tarefas) — o monograma;
+  * uma linha "Dezorzi®" no rodapé da barra lateral e da tela de entrada.
+
+O programa é ferramenta de trabalho: quem o abre está atrás da nota. A marca
+assina, não decora.
+
+O monograma é desenhado por fórmula (ver marca.py): moldura verde-petróleo, o D
+usando a lateral esquerda como haste, o Z usando as barras de cima e de baixo, e
+os dois vazados dourados. É uma reconstrução do logotipo feita a partir da
+imagem — serve bem no tamanho de um ícone, mas não substitui o arquivo original.
+
+PARA USAR O ARQUIVO OFICIAL
+---------------------------
+Coloque o logotipo nesta pasta com o nome exato:
+
+    logo.png
+
+A partir daí ele passa a valer no lugar do desenho. Pelo programa, o mesmo se
+faz em:
+
+    Configurações > Usar meu arquivo de logotipo…
+
+Recomendações para o arquivo:
+  * formato PNG (o Tk não lê JPG nem SVG);
+  * uns 600 px de altura — o programa reduz, não amplia;
+  * fundo branco, e não transparente: sobre a barra lateral escura, um fundo
+    transparente deixaria o miolo do D em azul-marinho.
+
+Para voltar ao desenho interno, basta apagar o logo.png.
+
+CORES DA MARCA
+--------------
+    verde-petróleo   #245f66
+    dourado          #c3a059
+
+Ficam só no monograma. A paleta do programa é outra (ui.py) e continua como
+estava — repintar as telas inteiras não é assinar, é chamar atenção.

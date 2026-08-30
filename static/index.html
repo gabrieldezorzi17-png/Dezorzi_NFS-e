@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dezorzi® · Central de Notas</title>
+  <link rel="icon" href="/marca.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Antes da primeira pintura, e como arquivo servido: o CSP do servidor
+       bloqueia script embutido, e deixar isto para o app.js piscaria a tela
+       branca por um quadro em quem usa o tema escuro. -->
+  <script src="/tema.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== trilho ===================== -->
+  <nav class="rail" aria-label="Seções">
+    <div class="logo">DZ</div>
+
+    <button class="rail-item" type="button" data-tela="painel" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      <b>Painel</b>
+    </button>
+
+    <button class="rail-item" type="button" data-tela="notas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9.5 12.5h6M9.5 16h4"/></svg>
+      <b>Notas</b>
+    </button>
+
+    <button class="rail-item" type="button" data-tela="empresas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-5h4v5"/></svg>
+      <b>Empresas</b>
+    </button>
+
+    <div class="rail-foot">
+      <button class="icon-btn" type="button" id="btn-tema" title="Alternar tema" aria-label="Alternar tema claro e escuro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===================== conteúdo ===================== -->
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title" id="titulo">Painel</h1>
+        <p class="page-sub" id="subtitulo">Visão geral da emissão de notas.</p>
+      </div>
+      <div class="topbar-right">
+        <div class="conexao" id="conexao">
+          <span class="dot" aria-hidden="true"></span>
+          <div>
+            <b>Motor fiscal</b>
+            <span id="conexao-txt">verificando…</span>
+          </div>
+        </div>
+        <span id="selo-modo"></span>
+        <button class="btn-ghost" type="button" id="btn-recarregar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6.3 6.3L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 13.7 4.7L20 15.5"/><path d="M20 20v-4.5h-4.5"/></svg>
+          Atualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- ---------- PAINEL ---------- -->
+    <section id="tela-painel">
+      <div class="grade" id="painel-cartoes"></div>
+
+      <div class="cartao">
+        <h2>Notas recentes</h2>
+        <ul class="lista-recente" id="recentes"></ul>
+      </div>
+    </section>
+
+    <!-- ---------- NOTAS ---------- -->
+    <section id="tela-notas" class="oculto">
+      <div class="controls">
+        <div class="field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="busca" placeholder="Tomador, CNPJ, nº, valor…" aria-label="Buscar notas">
+        </div>
+
+        <div class="field">
+          <span class="cap">Prestador</span>
+          <select id="f-prestador" aria-label="Filtrar por prestador"></select>
+        </div>
+
+        <div class="field">
+          <span class="cap">De</span>
+          <input type="date" id="f-de" aria-label="Data inicial">
+        </div>
+        <div class="field">
+          <span class="cap">Até</span>
+          <input type="date" id="f-ate" aria-label="Data final">
+        </div>
+
+        <button class="icon-btn" type="button" id="btn-olho" aria-pressed="false" title="Mostrar ou esconder valores" aria-label="Mostrar ou esconder valores">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <div class="counters" id="contadores" role="group" aria-label="Filtrar por situação"></div>
+
+      <div class="faixa ruim oculto" id="faixa-falhas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 9v5M12 17.5h.01"/><path d="M10.3 3.9 2.4 17.4a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span id="faixa-falhas-txt"></span>
+        <button class="fechar" type="button" id="faixa-falhas-x" aria-label="Fechar aviso">×</button>
+      </div>
+
+      <div class="selbar oculto" id="selbar">
+        <span class="quem" id="sel-quem"></span>
+        <button class="btn-ghost" type="button" id="btn-pdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 17h6"/></svg>
+          Abrir em PDF
+        </button>
+        <button class="btn-ghost" type="button" id="btn-detalhes">Detalhes</button>
+        <button class="btn-ghost" type="button" id="btn-enviar">Enviar ao portal</button>
+        <button class="btn-ghost" type="button" id="btn-limpar-sel">Limpar</button>
+      </div>
+
+      <div class="quadro">
+        <div class="rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th class="c-chk"><span class="plain"><input class="chk" type="checkbox" id="chk-todos" aria-label="Selecionar todas as visíveis"></span></th>
+                <th data-col="status" class="c-status"></th>
+                <th data-col="numero" class="c-numero"></th>
+                <th data-col="prestador" class="c-prest"></th>
+                <th data-col="tomador"></th>
+                <th data-col="servico" class="c-servico"></th>
+                <th data-col="valor" class="fim c-valor"></th>
+                <th data-col="data" class="fim c-data"></th>
+                <th class="fim c-acoes"><span class="plain">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody id="corpo"></tbody>
+          </table>
+        </div>
+        <div class="rodape-tabela">
+          <span id="contagem">—</span>
+          <span class="soma">Soma do que está à vista: <b id="soma">—</b></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- EMPRESAS ---------- -->
+    <section id="tela-empresas" class="oculto">
+      <div class="faixa" id="faixa-empresas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 16v-4M12 8h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        <span>Quem emite fica gravado em cada nota nova. As notas criadas antes
+          disso aparecem como <b>não registrado</b> — o dado não foi guardado e
+          não há de onde tirá-lo.</span>
+      </div>
+      <div class="grade" id="empresas-cartoes"></div>
+    </section>
+  </main>
+</div>
+
+<div class="avisos" id="avisos" aria-live="polite"></div>
+<div id="modal-raiz"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

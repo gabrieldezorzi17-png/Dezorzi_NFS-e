@@ -1,0 +1,59 @@
+{
+  "_comentario": [
+    "Gerado da captura da chamada 'login' (GWT-RPC) em 2026-08-15.",
+    "As credenciais NAO estao aqui: preencha NFSE_USUARIO e NFSE_SENHA no .env.",
+    "Na captura, o usuario era o CCM 304838 e a senha era o segundo campo do DadosLoginVO."
+  ],
+
+  "bootstrap": {
+    "method": "GET",
+    "url": "https://nfse.isssbc.com.br/",
+    "headers": {
+      "Accept": "text/html,application/xhtml+xml",
+      "Accept-Language": "pt"
+    },
+    "status": [200]
+  },
+
+  "method": "POST",
+  "url": "https://nfse.isssbc.com.br/nfseweb/nfse",
+  "headers": {
+    "Accept": "*/*",
+    "Accept-Language": "pt",
+    "Content-Type": "text/x-gwt-rpc; charset=UTF-8",
+    "Origin": "https://nfse.isssbc.com.br",
+    "Referer": "https://nfse.isssbc.com.br/",
+    "X-GWT-Module-Base": "https://nfse.isssbc.com.br/nfseweb/",
+    "X-GWT-Permutation": "{{env:NFSE_GWT_PERMUTATION}}"
+  },
+  "escape": "gwt",
+  "body": "7|0|8|https://nfse.isssbc.com.br/nfseweb/|{{env:NFSE_GWT_POLICY}}|br.com.eicon.nfseweb.client.service.ControllerService|login|br.com.eicon.nfseweb.client.vo.DadosLoginVO/3522690038|{{env:NFSE_USUARIO}}|{{env:NFSE_SENHA}}|br.com.eicon.nfseweb.client.principal.HeaderCentral$TIPO_USUARIO/662136067|1|2|3|4|1|5|5|0|0|0|6|1|0|0|7|8|1|0|",
+
+  "success": {
+    "status": [200],
+    "body_contains": "//OK",
+    "body_not_contains": "//EX"
+  },
+
+  "_probe_comentario": [
+    "getSession responde nos dois estados, mas o conteudo muda: sem login volta",
+    "praticamente vazio (14 bytes na captura); logado volta os dados da empresa",
+    "(1952 bytes). Por isso a sondagem procura o CCM na resposta — ele so aparece",
+    "quando a sessao esta autenticada. Se o seu CCM mudar, ajuste body_contains."
+  ],
+  "probe": {
+    "method": "POST",
+    "url": "https://nfse.isssbc.com.br/nfseweb/nfse",
+    "headers": {
+      "Accept": "*/*",
+      "Content-Type": "text/x-gwt-rpc; charset=UTF-8",
+      "Origin": "https://nfse.isssbc.com.br",
+      "Referer": "https://nfse.isssbc.com.br/",
+      "X-GWT-Module-Base": "https://nfse.isssbc.com.br/nfseweb/",
+      "X-GWT-Permutation": "{{env:NFSE_GWT_PERMUTATION}}"
+    },
+    "body": "7|0|4|https://nfse.isssbc.com.br/nfseweb/|{{env:NFSE_GWT_POLICY}}|br.com.eicon.nfseweb.client.service.ControllerService|getSession|1|2|3|4|0|",
+    "status": [200],
+    "body_contains": "{{env:NFSE_USUARIO}}"
+  }
+}
