@@ -1,31 +1,35 @@
 DEZORZI® · EMISSOR DE NFS-e
 ===========================
 
-Para abrir: dois cliques em "Dezorzi NFS-e.exe". Não precisa instalar Python
-nem nada.
+PARA INSTALAR
+-------------
+Dois cliques em "Instalar Dezorzi NFS-e.exe". Ele se instala sozinho, cria o
+atalho na Área de Trabalho e abre o programa. Não precisa escolher pasta, não
+precisa instalar Python, não precisa fazer mais nada.
 
-DUAS FORMAS DO MESMO PROGRAMA
------------------------------
-Na pasta "executavel" existem os dois; use o que for mais prático.
+Da segunda vez em diante, abra pelo atalho — o programa abre em meio segundo.
+A primeira abertura é a única demorada, porque é quando ele se instala.
 
-  Dezorzi NFS-e\            a pasta. Copie ela INTEIRA. Abre em ~3 segundos.
-  Dezorzi NFS-e.exe         um arquivo só. Copie só ele — na primeira abertura
-                            ele cria config\ e data\ ao lado de si. Abre em
-                            ~6 segundos, porque se descompacta a cada vez.
+Depois de instalado, o arquivo "Instalar Dezorzi NFS-e.exe" não serve mais
+para nada: pode apagar.
 
-O arquivo único é mais fácil de mandar por e-mail ou pendrive; a pasta é mais
-rápida no dia a dia. Depois da primeira abertura, os dois são iguais.
+ATUALIZAÇÕES
+------------
+Não há o que fazer. Ao abrir, o programa confere se saiu versão nova e, se
+saiu, se atualiza sozinho antes de mostrar a tela. As notas emitidas e os
+ajustes não são tocados — moram fora da pasta que a atualização troca.
 
-Em qualquer um dos casos, ponha o programa numa pasta do disco onde ele possa
-gravar — Área de Trabalho ou Documentos servem. Em "Arquivos de Programas" o
-Windows bloqueia a gravação e as notas não são salvas (o programa avisa).
+ONDE ELE FICA
+-------------
+  %LOCALAPPDATA%\Dezorzi NFS-e\
 
-O QUE FICA AO LADO
-------------------
-  config\             modelos de emissão, alíquotas, municípios
-  data\               as notas emitidas ficam aqui
-  .env                ajustes
-  _internal\          (só na versão em pasta) as peças do programa — não mexa
+      app\              o programa. Esta pasta é TROCADA a cada atualização —
+                        não guarde nada aqui dentro.
+      config\           modelos de emissão, alíquotas, municípios
+      data\             as notas emitidas ficam aqui
+      .env              ajustes
+
+Para chegar lá: tecla Windows + R, digite %LOCALAPPDATA% e Enter.
 
 ATENÇÃO: A TRANSMISSÃO ESTÁ ATIVA
 ---------------------------------
@@ -33,7 +37,7 @@ Esta cópia emite de verdade. Ao clicar em emitir, a nota vai para a prefeitura 
 passa a existir — nota emitida não se apaga, só se cancela, e nem todo caso
 permite cancelamento.
 
-A barra lateral mostra o estado em que o programa está:
+A barra do topo mostra o estado em que o programa está:
 
     "Transmissão ativa"  (laranja)  -> envia de verdade
     "Modo seguro"        (verde)    -> monta e confere, mas não envia
@@ -49,9 +53,9 @@ está aberto.
 
 AS NOTAS
 --------
-Cada cópia do programa tem o histórico dela, na pasta data\. Para levar as notas
-já emitidas junto, copie o conteúdo do data\ da máquina de origem. Para várias
-cópias apontarem para o mesmo histórico, use NFSE_HOME no .env.
+Cada computador tem o histórico dele, na pasta data\. Para levar as notas já
+emitidas junto, copie o conteúdo do data\ da máquina de origem. Para várias
+máquinas apontarem para o mesmo histórico, use NFSE_HOME no .env.
 
 SE ALGUMA COISA DER ERRADO
 --------------------------
@@ -67,4 +71,4 @@ SE O WINDOWS RECLAMAR
 ---------------------
 Programa sem assinatura digital costuma levar aviso do SmartScreen na primeira
 vez: "Mais informações" > "Executar assim mesmo". Antivírus corporativo pode
-barrar — nesse caso, peça para liberar a pasta.
+barrar — nesse caso, peça para liberar a pasta %LOCALAPPDATA%\Dezorzi NFS-e.

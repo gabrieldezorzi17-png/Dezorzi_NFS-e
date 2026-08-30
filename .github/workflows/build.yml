@@ -1,9 +1,12 @@
 # Compila o programa e publica a versão, a cada tag `vX.Y.Z`.
 #
-# O que sai numa Release: o `.exe` de arquivo único e o `version.json` — este
-# já com o endereço de download e a impressão digital preenchidos, que é o que
-# o auto-atualizador exige para aceitar a troca. Fechado assim, publicar volta
-# a ser "criar a tag": nada precisa ser editado à mão depois.
+# O que sai numa Release: o instalador (um `.exe` só) e o `version.json` —
+# este já com o endereço de download e a impressão digital preenchidos, que é
+# o que o auto-atualizador exige para aceitar a troca. Fechado assim, publicar
+# volta a ser "criar a tag": nada precisa ser editado à mão depois.
+#
+# A pasta compilada NÃO é publicada: ela viaja compactada dentro do
+# instalador. O que a pessoa baixa continua sendo um arquivo só.
 #
 # COMO USAR
 #   1. Suba `VERSAO_ATUAL` em updater.py.
@@ -71,8 +74,12 @@ jobs:
           fi
           tail -3 testes.log
 
-      - name: Compilar o arquivo único
-        run: python empacotar.py --unico
+      - name: Compilar o instalador
+        # Dois formatos num: compila a versão em PASTA (abre em 0,68 s, contra
+        # 3,60 s do arquivo único — medido com cronômetro) e a embrulha num
+        # .exe só, que é o que se manda por link. Ele instala em
+        # %LOCALAPPDATA%, cria o atalho e abre o programa.
+        run: python empacotar.py --instalador
         shell: bash
 
       - name: Preencher e conferir o version.json

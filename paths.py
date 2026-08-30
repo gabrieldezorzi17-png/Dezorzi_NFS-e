@@ -35,13 +35,35 @@ def _pasta_do_usuario() -> Path:
     return Path(base) / "Dezorzi NFS-e"
 
 
+# Nome da subpasta onde o instalador põe o programa. Ela é trocada INTEIRA a
+# cada atualização — nada que seja do usuário pode morar aí dentro.
+PASTA_DO_PROGRAMA = "app"
+
+
+def _instalado() -> bool:
+    """O executável está na pasta que o instalador criou?
+
+    A pergunta é só sobre o lugar: `…/Dezorzi NFS-e/app/programa.exe`. Uma
+    cópia solta da pasta, em qualquer outro lugar, continua sendo o que
+    sempre foi — o formato pasta guardando tudo ao lado do .exe.
+    """
+    if not getattr(sys, "frozen", False):
+        return False
+    ao_lado = Path(sys.executable).resolve().parent
+    return (ao_lado.name.lower() == PASTA_DO_PROGRAMA
+            and ao_lado.parent == _pasta_do_usuario().resolve())
+
+
 def _raiz() -> Path:
     """A pasta do programa: onde ficam o .env, o config/ e as notas.
 
     Rodando solto, é a pasta do código. Como executável, depende do formato:
 
-    - **pasta**: ao lado do .exe, que é o ponto desse formato — o config/ e as
-      notas ficam à vista, para abrir e copiar.
+    - **instalado**: uma pasta acima do .exe. O instalador põe o programa em
+      `%LOCALAPPDATA%/Dezorzi NFS-e/app/` e troca essa pasta inteira a cada
+      atualização; o `.env` e as notas ficam do lado de fora, intactos.
+    - **pasta** (cópia solta): ao lado do .exe, que é o ponto desse formato —
+      o config/ e as notas ficam à vista, para abrir e copiar.
     - **arquivo único**: em %LOCALAPPDATA%. Antes era ao lado do .exe também,
       e isso obrigava quem recebe o programa a se importar com ONDE ele fica:
       largado na Área de Trabalho, o programa criava `config/`, `data/` e
@@ -56,6 +78,10 @@ def _raiz() -> Path:
     if not getattr(sys, "frozen", False):
         return Path(__file__).resolve().parent
     ao_lado = Path(sys.executable).resolve().parent
+    if _instalado():
+        # Uma pasta acima: `app/` é substituída inteira a cada atualização, e
+        # o que é do usuário não pode ir junto.
+        return ao_lado.parent
     if not _arquivo_unico():
         return ao_lado
     if (ao_lado / "data").is_dir() or (ao_lado / ".env").is_file():
@@ -71,6 +97,10 @@ def _embutidos() -> Path:
     cópias iniciais do modelo de emissão e do .env (ver ``instalacao.py``).
     Rodando solto, não há nada embutido: os arquivos já estão na pasta.
     """
+    if _instalado():
+        # No formato pasta a semente viaja ao lado do .exe, não dentro do
+        # `_internal` — é de lá que sai a primeira cópia do config/ e do .env.
+        return Path(sys.executable).resolve().parent
     interno = getattr(sys, "_MEIPASS", None)
     return Path(interno).resolve() if interno else _raiz()
 

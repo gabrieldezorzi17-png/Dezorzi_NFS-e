@@ -1,6 +1,8 @@
 """Gera o executável do programa em ``executavel/``.
 
     python empacotar.py              pasta com o .exe e os arquivos ao lado
+    python empacotar.py --instalador o que se publica: um .exe que instala
+                                    a versão em pasta e cria o atalho
     python empacotar.py --unico      um único .exe, que se instala ao abrir
     python empacotar.py --seguro     sai em modo seguro (não transmite)
 
@@ -212,7 +214,7 @@ def construir(*, unico: bool) -> Path:
     return (SAIDA / f"{NOME}.exe") if unico else (SAIDA / NOME)
 
 
-def publicar_manifesto(exe: Path) -> Path:
+def publicar_manifesto(exe: Path, *, instalador: bool = False) -> Path:
     """Escreve o `version.json` que o auto-atualizador vai ler.
 
     A impressão digital do arquivo nasce aqui, onde o arquivo acabou de ser
@@ -234,11 +236,18 @@ def publicar_manifesto(exe: Path) -> Path:
             digestor.update(pedaco)
 
     manifesto = SAIDA / "version.json"
-    manifesto.write_text(json.dumps({
+    corpo = {
         "versao": updater.VERSAO_ATUAL,
         "arquivo": "",
         "sha256": digestor.hexdigest(),
         "notas": "",
+    }
+    if instalador:
+        # É por este campo que o programa do cliente decide o que fazer com o
+        # arquivo baixado: rodar (instalador) ou trocar por cima do .exe.
+        corpo["formato"] = "instalador"
+    manifesto.write_text(json.dumps({
+        **corpo,
         "_como_usar": (
             "Suba este arquivo e o .exe para o mesmo lugar (https). Preencha "
             "'arquivo' com o endereço do .exe e 'notas' com o que mudou. "
@@ -341,6 +350,89 @@ def conferir(alvo: Path, *, unico: bool, seguro: bool) -> None:
     print(f"  transmissão: {'MODO SEGURO — não envia' if seguro else 'ATIVA — envia de verdade'}")
 
 
+NOME_INSTALADOR = f"Instalar {NOME}"
+
+
+def compactar_o_programa(pasta_do_programa: Path) -> Path:
+    """A pasta do programa vira um .zip — o que o instalador carrega dentro.
+
+    Compactada porque o PyInstaller guarda dado quase do tamanho que recebe:
+    a pasta solta dava um instalador de 24 MB; em .zip são 12,6 MB, o mesmo
+    que o arquivo único de hoje. E descompactar UM arquivo custa ~1,2 s,
+    contra 412 arquivos abertos um a um.
+    """
+    import zipfile
+
+    import updater
+
+    alvo = TRABALHO / "app.zip"
+    alvo.parent.mkdir(parents=True, exist_ok=True)
+    alvo.unlink(missing_ok=True)
+    with zipfile.ZipFile(alvo, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as pacote:
+        for arquivo in sorted(pasta_do_programa.rglob("*")):
+            if arquivo.is_file():
+                pacote.write(arquivo, arquivo.relative_to(pasta_do_programa))
+        # Para o instalador saber se o que já está instalado é isto mesmo, e
+        # poder pular a cópia. Vai junto na pasta instalada, não só no .zip.
+        pacote.writestr("versao.txt", updater.VERSAO_ATUAL)
+    return alvo
+
+
+def construir_instalador(pasta_do_programa: Path) -> Path:
+    """Embrulha a pasta do programa num arquivo único que se instala."""
+    import marca
+
+    embrulhado = compactar_o_programa(pasta_do_programa)
+    icone, _origem = marca.icone_do_windows(BASE / "assets" / "app_icon.ico")
+    comando = [
+        sys.executable, "-m", "PyInstaller", "instalador.py",
+        "--name", NOME_INSTALADOR,
+        "--onefile",
+        "--windowed",
+        "--noconfirm",
+        "--icon", str(icone),
+        "--distpath", str(SAIDA),
+        "--workpath", str(TRABALHO),
+        "--specpath", str(BASE),
+        "--add-data", f"{embrulhado}{os.pathsep}.",
+        "--exclude-module", "pytest",
+        "--exclude-module", "unittest",
+        "--exclude-module", "PIL",
+    ]
+    receita = _receita(comando)
+    receita[1:3] = ["-m", "PyInstaller.utils.cliutils.makespec"]
+    subprocess.run(receita, check=True, cwd=BASE)
+    spec = BASE / f"{NOME_INSTALADOR}.spec"
+    _peneirar(spec)
+    subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm",
+                    "--distpath", str(SAIDA), "--workpath", str(TRABALHO),
+                    str(spec)], check=True, cwd=BASE)
+    spec.unlink(missing_ok=True)
+    return SAIDA / f"{NOME_INSTALADOR}.exe"
+
+
+def conferir_instalador(instalador: Path, pasta: Path) -> None:
+    """O instalador tem de ser maior que o programa que carrega dentro."""
+    problemas: list[str] = []
+    if not instalador.exists():
+        problemas.append(f"não achei {instalador.name}")
+        raise SystemExit("\n".join(problemas))
+    dentro = sum(f.stat().st_size for f in pasta.rglob("*") if f.is_file())
+    if instalador.stat().st_size < dentro * 0.25:
+        # Comprime bem, mas não some: um instalador muito menor que o
+        # conteúdo é sinal de que a pasta não entrou.
+        problemas.append(
+            f"o instalador tem {instalador.stat().st_size/1e6:.1f} MB para "
+            f"{dentro/1e6:.1f} MB de programa — a pasta não entrou")
+    # E o teste que não depende de tamanho nenhum: o programa está lá dentro?
+    import instalador as programa_instalador
+
+    if not programa_instalador._tem_o_programa(TRABALHO / "app.zip"):
+        problemas.append("o .zip da carga não tem o executável do programa")
+    if problemas:
+        raise SystemExit("\n".join(f"  - {p}" for p in problemas))
+
+
 def gerar(*, unico: bool, seguro: bool) -> Path:
     spec = BASE / f"{NOME}.spec"
     if spec.exists():
@@ -360,8 +452,11 @@ if __name__ == "__main__":
     seguro = "--seguro" in sys.argv
     # Sem escolha, gera os dois: a pasta para trabalhar e o arquivo único para
     # entregar. São o mesmo programa, com a mesma semente.
+    instalador = "--instalador" in sys.argv
     formatos = []
-    if "--unico" in sys.argv:
+    if instalador:
+        formatos = [False]        # a pasta é o recheio do instalador
+    elif "--unico" in sys.argv:
         formatos = [True]
     elif "--pasta" in sys.argv:
         formatos = [False]
@@ -371,7 +466,17 @@ if __name__ == "__main__":
     limpar()
     preparar_semente(seguro=seguro)
     for unico in formatos:
-        gerar(unico=unico, seguro=seguro)
+        alvo = gerar(unico=unico, seguro=seguro)
+
+    if instalador:
+        embrulho = construir_instalador(alvo)
+        conferir_instalador(embrulho, alvo)
+        manifesto = publicar_manifesto(embrulho, instalador=True)
+        print(f"\nPronto: {embrulho}")
+        print(f"  {embrulho.stat().st_size/1e6:.0f} MB — instala e abre "
+              f"{NOME} em %LOCALAPPDATA%")
+        print(f"  para publicar: {manifesto.name} "
+              f"(preencha 'arquivo' com a URL)")
 
     spec = BASE / f"{NOME}.spec"
     if spec.exists():

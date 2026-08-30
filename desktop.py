@@ -2324,7 +2324,8 @@ class NfseDesktop(tk.Tk):
             if estado["desistiu"]:
                 return
             try:
-                updater.aplicar_atualizacao(arquivo)
+                updater.aplicar_atualizacao(arquivo,
+                                            instalador=nova.instalador)
             except Exception as exc:
                 registro.falha("troca do executavel", exc)
                 falhou(str(exc))

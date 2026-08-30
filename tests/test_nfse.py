@@ -62,6 +62,7 @@ import desktop  # noqa: E402
 import nfse_client  # noqa: E402
 import service  # noqa: E402
 import session  # noqa: E402
+import instalador  # noqa: E402
 import storage  # noqa: E402
 import validation  # noqa: E402
 
@@ -4913,12 +4914,14 @@ class PublicacaoNaNuvemTests(unittest.TestCase):
         self.assertIn('tags: ["v*"]', texto)
         self.assertIn("contents: write", texto)
         self.assertIn("windows-latest", texto)
-        self.assertIn("empacotar.py --unico", texto)
+        # `--instalador`: o que se publica passou a ser o instalador, que
+        # carrega dentro a versão em pasta. Ver instalador.py.
+        self.assertIn("empacotar.py --instalador", texto)
 
     def test_o_workflow_confere_a_versao_antes_de_publicar(self):
         texto = (self.fluxo / "build.yml").read_text(encoding="utf-8")
         ordem = [texto.index(t) for t in ("conferir_versao.py",
-                                          "empacotar.py --unico",
+                                          "empacotar.py --instalador",
                                           "action-gh-release")]
         self.assertEqual(ordem, sorted(ordem),
                          "a conferência tem de vir antes de compilar e publicar")
@@ -5579,20 +5582,30 @@ class RealceDoCartaoTests(unittest.TestCase):
         ui.usar_tema("claro")
 
     def test_a_cor_passa_por_valores_intermediarios(self):
-        """Saltar direto seria o comportamento antigo."""
-        partida = self.cartao._fundo_agora
-        vistos = set()
+        """Saltar direto seria o comportamento antigo.
+
+        As cores são colhidas DENTRO da animação, e não olhando o cartão de
+        fora entre um `update` e outro. Numa máquina ocupada — a de compilar,
+        por exemplo — vários quadros vencem ao mesmo tempo e rodam no mesmo
+        `update`; quem olha de fora vê só o último e acha que houve salto.
+        Este teste já falhou por isso, sem nada errado no programa.
+        """
+        pintadas = []
+        original = self.cartao._vestir
+
+        def espiar(fundo, borda, *resto):
+            pintadas.append(fundo)
+            return original(fundo, borda, *resto)
+
+        self.cartao._vestir = espiar
         self.cartao.event_generate("<Enter>")
-        fim = time.time() + 1.0
-        while time.time() < fim:
+        fim = time.time() + 3.0
+        while time.time() < fim and self.cartao._realce is not None:
             self.raiz.update()
-            vistos.add(self.cartao._fundo_agora)
-            if self.cartao._realce is None and len(vistos) > 1:
-                break
-            time.sleep(0.01)
-        intermediarias = vistos - {partida, ui.SURFACE_ALT}
+            time.sleep(0.005)
+        intermediarias = set(pintadas) - {ui.SURFACE, ui.SURFACE_ALT}
         self.assertTrue(intermediarias,
-                        f"foi direto de {partida} ao destino: {vistos}")
+                        f"foi direto ao destino: {pintadas}")
 
     def test_chega_ao_destino(self):
         self.cartao.event_generate("<Enter>")
@@ -6224,3 +6237,250 @@ class ListaDeNotasEmMemoriaTests(unittest.TestCase):
         shutil.rmtree(self.pasta, ignore_errors=True)
         self.assertEqual(storage.list_all(), [])
         self.assertEqual(storage._LIDAS, {})
+
+
+class ProgramaInstaladoTests(unittest.TestCase):
+    """Os dados moram FORA da pasta que a atualização troca.
+
+    `app/` é substituída inteira a cada versão. Se o `.env` e as notas
+    morassem lá dentro, a primeira atualização apagaria histórico fiscal —
+    é a razão de a regra existir, e é o que este teste tranca.
+    """
+
+    def setUp(self):
+        self.pasta = Path(tempfile.mkdtemp(prefix="inst_")).resolve()
+        self.guardado = (getattr(sys, "frozen", False), sys.executable,
+                         os.environ.get("LOCALAPPDATA"))
+        os.environ["LOCALAPPDATA"] = str(self.pasta)
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        frozen, executavel, local = self.guardado
+        if frozen:
+            sys.frozen = frozen
+        elif hasattr(sys, "frozen"):
+            del sys.frozen
+        sys.executable = executavel
+        if local is None:
+            os.environ.pop("LOCALAPPDATA", None)
+        else:
+            os.environ["LOCALAPPDATA"] = local
+        shutil.rmtree(self.pasta, ignore_errors=True)
+
+    def _fingir(self, caminho_do_exe):
+        sys.frozen = True
+        sys.executable = str(caminho_do_exe)
+
+    def test_reconhece_a_pasta_do_instalador(self):
+        exe = self.pasta / "Dezorzi NFS-e" / "app" / "Dezorzi NFS-e.exe"
+        exe.parent.mkdir(parents=True)
+        self._fingir(exe)
+        self.assertTrue(paths._instalado())
+        self.assertEqual(paths._raiz(), exe.parent.parent)
+
+    def test_copia_solta_da_pasta_continua_como_era(self):
+        """Uma cópia em qualquer outro lugar guarda tudo ao lado do .exe."""
+        exe = self.pasta / "qualquer" / "app" / "Dezorzi NFS-e.exe"
+        exe.parent.mkdir(parents=True)
+        self._fingir(exe)
+        self.assertFalse(paths._instalado())
+
+    def test_a_semente_vem_de_junto_do_exe(self):
+        """No formato pasta o config/ modelo viaja ao lado, não no _internal."""
+        exe = self.pasta / "Dezorzi NFS-e" / "app" / "Dezorzi NFS-e.exe"
+        exe.parent.mkdir(parents=True)
+        self._fingir(exe)
+        self.assertEqual(paths._embutidos(), exe.parent)
+
+    def test_rodando_do_codigo_nunca_e_instalado(self):
+        if hasattr(sys, "frozen"):
+            del sys.frozen
+        self.assertFalse(paths._instalado())
+
+
+class InstaladorTests(unittest.TestCase):
+    """Instalar, atualizar e não encostar no que é do usuário."""
+
+    def setUp(self):
+        self.raiz = Path(tempfile.mkdtemp(prefix="inst_")).resolve()
+        self.carga = self.raiz / "carga" / "app"
+        self.carga.mkdir(parents=True)
+        (self.carga / instalador.EXECUTAVEL).write_text("v1", encoding="utf-8")
+        (self.carga / "_internal").mkdir()
+        (self.carga / "_internal" / "python.dll").write_text("x", encoding="utf-8")
+        self.destino = self.raiz / "instalado"
+        self.addCleanup(lambda: shutil.rmtree(self.raiz, ignore_errors=True))
+
+    def _dados_do_usuario(self):
+        self.destino.mkdir(parents=True, exist_ok=True)
+        (self.destino / ".env").write_text("NFSE_SENHA=", encoding="utf-8")
+        (self.destino / "data").mkdir(exist_ok=True)
+        (self.destino / "data" / "nota.json").write_text('{"id":"1"}',
+                                                         encoding="utf-8")
+
+    def test_instala_a_pasta_do_programa(self):
+        exe = instalador.instalar(self.destino, origem=self.carga)
+        self.assertTrue(exe.is_file())
+        self.assertEqual(exe.parent.name, "app")
+        self.assertTrue((exe.parent / "_internal" / "python.dll").is_file())
+
+    def test_atualizar_troca_o_programa_e_poupa_os_dados(self):
+        self._dados_do_usuario()
+        instalador.instalar(self.destino, origem=self.carga)
+        (self.carga / instalador.EXECUTAVEL).write_text("v2", encoding="utf-8")
+        (self.carga / "novo.txt").write_text("novidade", encoding="utf-8")
+        exe = instalador.instalar(self.destino, origem=self.carga)
+        self.assertEqual(exe.read_text(encoding="utf-8"), "v2")
+        self.assertTrue((exe.parent / "novo.txt").is_file())
+        self.assertEqual((self.destino / ".env").read_text(encoding="utf-8"),
+                         "NFSE_SENHA=")
+        self.assertTrue((self.destino / "data" / "nota.json").is_file())
+
+    def test_nao_deixa_pasta_pela_metade(self):
+        """Depois da troca só existe `app` — nem `.novo`, nem `.antiga`."""
+        instalador.instalar(self.destino, origem=self.carga)
+        instalador.instalar(self.destino, origem=self.carga)
+        restos = [p.name for p in self.destino.glob("app.*")]
+        self.assertEqual(restos, [])
+
+    def test_resto_de_instalacao_anterior_e_recolhido(self):
+        """Pasta velha que não pôde ser apagada não fica para sempre."""
+        self.destino.mkdir(parents=True, exist_ok=True)
+        (self.destino / "app.antiga").mkdir()
+        (self.destino / "app.antiga" / "lixo.txt").write_text("x", encoding="utf-8")
+        instalador.instalar(self.destino, origem=self.carga)
+        self.assertFalse((self.destino / "app.antiga").exists())
+
+    def test_instala_de_um_zip(self):
+        """É assim que a carga viaja de verdade: compactada, um arquivo só."""
+        import zipfile
+
+        embrulho = self.raiz / "app.zip"
+        with zipfile.ZipFile(embrulho, "w") as pacote:
+            for arquivo in self.carga.rglob("*"):
+                if arquivo.is_file():
+                    pacote.write(arquivo, arquivo.relative_to(self.carga))
+        exe = instalador.instalar(self.destino, origem=embrulho)
+        self.assertTrue(exe.is_file())
+        self.assertTrue((exe.parent / "_internal" / "python.dll").is_file())
+
+    def test_zip_sem_o_programa_e_recusado(self):
+        import zipfile
+
+        embrulho = self.raiz / "vazio.zip"
+        with zipfile.ZipFile(embrulho, "w") as pacote:
+            pacote.writestr("leia-me.txt", "nada aqui")
+        with self.assertRaises(FileNotFoundError):
+            instalador.instalar(self.destino, origem=embrulho)
+
+    def test_versao_igual_nao_recopia_nada(self):
+        """Abrir o instalador de novo tem de ser barato.
+
+        Quem vem da travessia fica com o .exe antigo virado instalador: abrir
+        aquele arquivo passa a ser "instalar outra vez". Sem esta conferência
+        seriam segundos de cópia inútil a cada abertura.
+        """
+        (self.carga / "versao.txt").write_text("9.9.9", encoding="utf-8")
+        exe = instalador.instalar(self.destino, origem=self.carga)
+        marca = exe.parent / "marca.txt"
+        marca.write_text("estava aqui", encoding="utf-8")
+        instalador.instalar(self.destino, origem=self.carga)
+        self.assertTrue(marca.is_file(), "recopiou a pasta sem precisar")
+
+    def test_versao_diferente_instala_por_cima(self):
+        (self.carga / "versao.txt").write_text("9.9.9", encoding="utf-8")
+        exe = instalador.instalar(self.destino, origem=self.carga)
+        marca = exe.parent / "marca.txt"
+        marca.write_text("da versao antiga", encoding="utf-8")
+        (self.carga / "versao.txt").write_text("9.9.10", encoding="utf-8")
+        instalador.instalar(self.destino, origem=self.carga)
+        self.assertFalse(marca.is_file(), "não trocou a pasta")
+
+    def test_sem_carimbo_de_versao_instala_sempre(self):
+        """Carga antiga, sem versao.txt, não pode ser confundida com igual."""
+        instalador.instalar(self.destino, origem=self.carga)
+        marca = self.destino / "app" / "marca.txt"
+        marca.write_text("x", encoding="utf-8")
+        instalador.instalar(self.destino, origem=self.carga)
+        self.assertFalse(marca.is_file())
+
+    def test_carga_sem_programa_e_recusada(self):
+        vazia = self.raiz / "vazia"
+        vazia.mkdir()
+        with self.assertRaises(FileNotFoundError):
+            instalador.instalar(self.destino, origem=vazia)
+
+    def test_atalho_sai_no_lugar_pedido(self):
+        if sys.platform != "win32":
+            self.skipTest("atalho .lnk é coisa do Windows")
+        exe = instalador.instalar(self.destino, origem=self.carga)
+        perfil = self.raiz / "perfil"
+        (perfil / "Desktop").mkdir(parents=True)
+        guardado = (os.environ.get("USERPROFILE"), os.environ.get("APPDATA"))
+        os.environ["USERPROFILE"] = str(perfil)
+        os.environ.pop("APPDATA", None)
+        try:
+            feitos = instalador.criar_atalhos(exe)
+        finally:
+            if guardado[0] is not None:
+                os.environ["USERPROFILE"] = guardado[0]
+            if guardado[1] is not None:
+                os.environ["APPDATA"] = guardado[1]
+        self.assertTrue(feitos, "nenhum atalho foi criado")
+        self.assertTrue((perfil / "Desktop" / "Dezorzi NFS-e.lnk").is_file())
+
+    def test_esperar_um_processo_que_nao_existe_termina_logo(self):
+        inicio = time.time()
+        self.assertTrue(instalador.esperar_fechar(0, limite=5))
+        self.assertLess(time.time() - inicio, 4)
+
+
+class AtualizacaoPorInstaladorTests(unittest.TestCase):
+    """O anúncio decide como a troca é feita."""
+
+    def test_o_anuncio_pode_dizer_que_e_instalador(self):
+        self.assertTrue(updater._e_instalador({"formato": "instalador"}))
+        self.assertTrue(updater._e_instalador({"formato": "INSTALADOR"}))
+        self.assertFalse(updater._e_instalador({}))
+        self.assertFalse(updater._e_instalador({"formato": "unico"}))
+
+    def test_anuncio_antigo_continua_trocando_arquivo(self):
+        """Campo que não existe não pode mudar o comportamento de ninguém."""
+        anuncio = {"versao": "99.0.0", "arquivo": "https://exemplo/app.exe",
+                   "sha256": "a" * 64}
+        self.assertFalse(updater._e_instalador(anuncio))
+        self.assertFalse(updater.Atualizacao(versao="1", url="u",
+                                             sha256="a" * 64).instalador)
+
+    def test_aplicar_com_instalador_roda_o_arquivo_baixado(self):
+        chamadas = []
+        original = updater.subprocess.Popen
+        updater.subprocess.Popen = lambda *a, **k: chamadas.append((a, k))
+        try:
+            updater.aplicar_atualizacao(Path("C:/tmp/instalador.exe"),
+                                        instalador=True)
+        finally:
+            updater.subprocess.Popen = original
+        self.assertEqual(len(chamadas), 1)
+        argumentos = chamadas[0][0][0]
+        self.assertIn("--silencioso", argumentos)
+        self.assertIn("--esperar", argumentos)
+        self.assertEqual(argumentos[argumentos.index("--esperar") + 1],
+                         str(os.getpid()))
+
+    def test_aplicar_sem_instalador_continua_usando_o_roteiro(self):
+        chamadas = []
+        original = updater.subprocess.Popen
+        updater.subprocess.Popen = lambda *a, **k: chamadas.append((a, k))
+        pasta = Path(tempfile.mkdtemp(prefix="troca_")).resolve()
+        try:
+            baixado = pasta / "novo.exe"
+            baixado.write_text("x", encoding="utf-8")
+            alvo = pasta / "atual.exe"
+            alvo.write_text("y", encoding="utf-8")
+            updater.aplicar_atualizacao(baixado, alvo)
+        finally:
+            updater.subprocess.Popen = original
+            shutil.rmtree(pasta, ignore_errors=True)
+        self.assertEqual(len(chamadas), 1)
+        self.assertEqual(chamadas[0][0][0][0], "cmd")

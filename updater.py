@@ -70,7 +70,7 @@ import registro
 # A versão desta compilação. `empacotar.py` a lê para nomear o que publica, e
 # a tela de Ajustes a mostra — quem dá suporte precisa saber o que está rodando
 # sem pedir para o usuário abrir arquivo nenhum.
-VERSAO_ATUAL = "1.0.11"
+VERSAO_ATUAL = "1.0.12"
 
 VARIAVEL_URL = "NFSE_ATUALIZACAO_URL"
 ESPERA_REDE = 12          # segundos; a abertura não pode depender da internet
@@ -90,6 +90,9 @@ class Atualizacao:
     url: str
     sha256: str
     notas: str = ""
+    # O arquivo baixado se instala sozinho (formato em pasta) em vez de ser
+    # trocado por cima do .exe atual (formato de arquivo único).
+    instalador: bool = False
 
 
 # --------------------------------------------------------------------------- #
@@ -188,6 +191,15 @@ def _do_manifesto(dados: dict) -> tuple[str, str, str, str]:
             str(dados.get("notas") or dados.get("notes") or ""))
 
 
+def _e_instalador(dados: dict) -> bool:
+    """O anúncio diz que o arquivo se instala sozinho?
+
+    Campo novo: anúncio antigo não o tem, e o padrão continua sendo a troca
+    de arquivo, que é o que sempre foi feito.
+    """
+    return str(dados.get("formato") or "").strip().lower() == "instalador"
+
+
 def verificar_atualizacao(url: str | None = None) -> Atualizacao | None:
     """A versão publicada é maior que esta? Devolve o que baixar, ou ``None``.
 
@@ -221,7 +233,8 @@ def verificar_atualizacao(url: str | None = None) -> Atualizacao | None:
             f"a versão {versao} foi publicada sem SHA-256; sem ele não há como "
             "saber se o arquivo que chegou é o que você publicou")
     return Atualizacao(versao=versao, url=arquivo, sha256=sha.lower(),
-                       notas=" ".join(str(notas).split())[:600])
+                       notas=" ".join(str(notas).split())[:600],
+                       instalador=_e_instalador(dados))
 
 
 # --------------------------------------------------------------------------- #
@@ -339,18 +352,40 @@ def ambiente_do_roteiro(novo: Path, alvo: Path) -> dict[str, str]:
     return ambiente
 
 
-def aplicar_atualizacao(baixado: Path, alvo: Path | None = None) -> Path:
+def _sem_console() -> int:
+    """Bandeiras para o processo sobreviver ao `sys.exit` que vem a seguir."""
+    if sys.platform != "win32":
+        return 0
+    return (getattr(subprocess, "DETACHED_PROCESS", 0)
+            | getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
+def rodar_instalador(baixado: Path) -> Path:
+    """Entrega a troca ao instalador baixado. Quem chama encerra em seguida.
+
+    `--esperar` com o número deste processo: o instalador só mexe na pasta
+    depois que o programa fechar, senão o Windows ainda tem os arquivos
+    presos e a pasta antiga não sairia do caminho.
+    """
+    subprocess.Popen([str(baixado), "--silencioso", "--esperar", str(os.getpid())],
+                     cwd=str(Path(baixado).parent),
+                     creationflags=_sem_console(), close_fds=True)
+    registro.escrever("atualizacao por instalador", str(baixado))
+    return Path(baixado)
+
+
+def aplicar_atualizacao(baixado: Path, alvo: Path | None = None, *,
+                        instalador: bool = False) -> Path:
     """Dispara a troca. Quem chama tem de encerrar o programa em seguida.
 
-    Devolve o caminho do roteiro, para o chamador poder registrá-lo.
+    Devolve o caminho do roteiro (ou do instalador), para o chamador registrar.
     """
+    if instalador:
+        return rodar_instalador(Path(baixado))
     destino = Path(alvo) if alvo is not None else executavel_em_uso()
     roteiro = _roteiro(Path(baixado), destino, pasta_de_trabalho())
     # Solto do programa: ele precisa sobreviver ao `sys.exit` que vem a seguir.
-    criacao = 0
-    if sys.platform == "win32":
-        criacao = getattr(subprocess, "DETACHED_PROCESS", 0) | \
-            getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    criacao = _sem_console()
     subprocess.Popen(["cmd", "/c", str(roteiro)], cwd=str(roteiro.parent),
                      env=ambiente_do_roteiro(Path(baixado), destino),
                      creationflags=criacao, close_fds=True)
