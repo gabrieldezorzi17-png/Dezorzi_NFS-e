@@ -5,9 +5,10 @@
 COMO FUNCIONA
 -------------
 Ao abrir, o programa pergunta a um endereço na internet qual é a última versão
-publicada. Se for maior que a daqui, oferece a troca. Aceita, ele baixa o novo
-executável, confere a impressão digital, e sai — deixando um roteiro `.bat`
-encarregado de trocar o arquivo e reabrir o programa.
+publicada. Se for maior que a daqui, ele baixa o novo executável, confere a
+impressão digital, e sai — deixando um roteiro `.bat` encarregado de trocar o
+arquivo e reabrir o programa. Quem está na frente vê um aviso do que está
+acontecendo, e não precisa clicar em nada.
 
 O rodeio do `.bat` existe porque o Windows não deixa sobrescrever um `.exe` que
 está rodando. O programa precisa fechar antes, e algo tem de continuar vivo
@@ -25,8 +26,11 @@ prefeitura. Por isso há três travas, e nenhuma delas é opcional:
    SHA-256 do arquivo, e o que chega tem de bater com ele. Sem conferência,
    um servidor trocado ou um download corrompido viram código executado.
    `empacotar.py` já publica esse número — não custa nada.
-3. **Nunca sem perguntar.** A troca reinicia o programa. Fazer isso por conta
-   própria no meio de uma emissão é perder a nota que estava sendo digitada.
+3. **Só na abertura.** A troca reinicia o programa, e fazer isso no meio de
+   uma emissão perderia a nota que estava sendo digitada. Por isso a procura
+   acontece quando o programa abre — instante em que não há nada a perder,
+   porque a pessoa acabou de dar dois cliques no ícone. Aí ela é aplicada sem
+   perguntar: um botão ali seria só um passo entre quem abriu e o trabalho.
 
 FORMATO DE PASTA
 ----------------
