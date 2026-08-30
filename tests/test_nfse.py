@@ -5119,3 +5119,86 @@ class ContrasteWCAGTests(unittest.TestCase):
                 valor = self.razao(ui.contraste(cor), cor)
                 self.assertGreaterEqual(
                     valor, 4.5, f"{tema}: contraste({nome}={cor}) = {valor:.2f}:1")
+
+
+class EscalaTipograficaTests(unittest.TestCase):
+    """A régua de tamanhos tem degraus que se enxergam?
+
+    Antes eram sete tamanhos com razões de 1,045 a 1,375 entre vizinhos. Um
+    degrau de 1,045 — o 22 para o 23 — não se vê: eram sete tamanhos que o
+    olho lia como quatro.
+    """
+
+    @staticmethod
+    def _tamanho(fonte) -> int:
+        return abs(int(fonte[1]))
+
+    def setUp(self):
+        self.escala = [self._tamanho(f) for f in
+                       (ui.MICRO, ui.PEQUENO, ui.CORPO, ui.SUBTITULO,
+                        ui.TITULO, ui.DISPLAY)]
+
+    def test_a_regua_sobe_sempre(self):
+        self.assertEqual(self.escala, sorted(self.escala))
+
+    def test_os_degraus_de_cima_seguem_a_escala_modular(self):
+        """Do corpo para cima, cada degrau é ao menos 25% maior."""
+        de_cima = [self._tamanho(f) for f in
+                   (ui.CORPO, ui.SUBTITULO, ui.TITULO, ui.DISPLAY)]
+        for menor, maior in zip(de_cima, de_cima[1:]):
+            self.assertGreaterEqual(
+                maior / menor, 1.25,
+                f"{menor} -> {maior} é x{maior / menor:.3f}: não se enxerga")
+
+    def test_numero_e_display_sao_o_mesmo_degrau(self):
+        # Eram 22 e 23 — x1,045, dois tamanhos lidos como um só.
+        self.assertEqual(self._tamanho(ui.NUMERO), self._tamanho(ui.DISPLAY))
+
+    def test_os_dois_degraus_de_baixo_existem_por_densidade(self):
+        """9 e 10 ficam fora da escala de propósito: abaixo de 9 some.
+
+        A hierarquia entre eles é sustentada por cor e caixa alta, não por
+        tamanho — é uma tela de dados, e a régua modular não alcança ali.
+        """
+        self.assertEqual(self._tamanho(ui.MICRO), 9)
+        self.assertLess(self._tamanho(ui.PEQUENO), self._tamanho(ui.CORPO))
+
+    def test_a_etiqueta_e_o_micro_em_negrito(self):
+        self.assertEqual(self._tamanho(ui.ETIQUETA), self._tamanho(ui.MICRO))
+        self.assertIn("bold", ui.ETIQUETA)
+
+
+class AtenuacaoTests(unittest.TestCase):
+    """A curva que move o indicador da navegação."""
+
+    def test_parte_do_zero_e_chega_ao_um(self):
+        self.assertEqual(ui.Segmentado.atenuar(0.0), 0.0)
+        self.assertEqual(ui.Segmentado.atenuar(1.0), 1.0)
+
+    def test_e_simetrica(self):
+        # Sai devagar e chega devagar, no mesmo ritmo dos dois lados.
+        for fracao in (0.1, 0.25, 0.4):
+            self.assertAlmostEqual(
+                ui.Segmentado.atenuar(fracao) + ui.Segmentado.atenuar(1 - fracao),
+                1.0, places=9)
+
+    def test_no_meio_do_caminho_esta_na_metade(self):
+        self.assertAlmostEqual(ui.Segmentado.atenuar(0.5), 0.5, places=9)
+
+    def test_comeca_devagar(self):
+        """O defeito da mola exponencial era partir na velocidade máxima."""
+        self.assertLess(ui.Segmentado.atenuar(0.1), 0.1 / 2)
+
+    def test_nunca_sai_do_trajeto(self):
+        anterior = -1.0
+        for passo in range(0, 101):
+            valor = ui.Segmentado.atenuar(passo / 100)
+            self.assertGreaterEqual(valor, anterior, "voltou para trás")
+            self.assertTrue(0.0 <= valor <= 1.0, f"saiu do intervalo: {valor}")
+            anterior = valor
+
+    def test_a_duracao_e_declarada(self):
+        # A mola antiga não tinha fim: parava num corte arbitrário de 0,6px.
+        self.assertGreater(ui.Segmentado.DURACAO, 0)
+        self.assertLessEqual(ui.Segmentado.DURACAO, 400,
+                             "animação longa demais atrapalha quem trabalha")

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 import sys
+import time
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
@@ -165,15 +166,15 @@ FAMILIA = "Segoe UI"
 MONO = "Consolas"
 
 DISPLAY = (FAMILIA, 23, "bold")
-TITULO = (FAMILIA, 16, "bold")
-SUBTITULO = (FAMILIA, 12)
+NUMERO = (FAMILIA, 23, "bold")
+TITULO = (FAMILIA, 18, "bold")
+SUBTITULO = (FAMILIA, 14)
 CORPO = (FAMILIA, 11)
 CORPO_FORTE = (FAMILIA, 11, "bold")
 PEQUENO = (FAMILIA, 10)
 PEQUENO_FORTE = (FAMILIA, 10, "bold")
 MICRO = (FAMILIA, 9)
 MICRO_FORTE = (FAMILIA, 9, "bold")
-NUMERO = (FAMILIA, 22, "bold")
 ETIQUETA = (FAMILIA, 9, "bold")  # rótulos de campo, em caixa alta
 
 # Espaçamento — múltiplos de 4, para o ritmo não sair torto
@@ -213,16 +214,31 @@ def escolher_familia(raiz: tk.Misc) -> str:
     # estreita que a Inter, então isto sai quase de graça em largura — e o que
     # era 8pt (o "CCM 304838", o "SÃO BERNARDO DO CAMPO") estava no limite em
     # que a letra some.
+    # A régua de cima segue uma escala modular de razão ~1,27: 11, 14, 18, 23.
+    #
+    # Antes eram 11, 12, 16, 22, 23 — com razões de 1,045 a 1,375. Um degrau
+    # de 1,045 (o 22 para o 23) não se enxerga: NUMERO e DISPLAY eram dois
+    # tamanhos que o olho lia como um só, e o SUBTITULO mal se separava do
+    # corpo. Agora cada degrau é visivelmente maior que o anterior.
+    #
+    # Embaixo ficam 9 e 10, que a escala não alcança: 11÷1,27 daria 8,7, e
+    # abaixo de 9 a letra some. Esses dois degraus existem por densidade —
+    # esta é uma tela de dados — e a hierarquia entre eles é sustentada por
+    # cor e caixa alta, não por tamanho.
+    #
+    # Tentei subir PEQUENO de 10 para 11 e a conta não fechou: o painel de
+    # detalhe engordou de 340 para 377px e espremeu a tabela até os nomes das
+    # empresas voltarem a ser cortados. Medido, não suposto.
     DISPLAY = (FAMILIA, 23, "bold")
-    TITULO = (FAMILIA, 16, "bold")
-    SUBTITULO = (FAMILIA, 12)
+    NUMERO = (FAMILIA, 23, "bold")
+    TITULO = (FAMILIA, 18, "bold")
+    SUBTITULO = (FAMILIA, 14)
     CORPO = (FAMILIA, 11)
     CORPO_FORTE = (FAMILIA, 11, "bold")
     PEQUENO = (FAMILIA, 10)
     PEQUENO_FORTE = (FAMILIA, 10, "bold")
     MICRO = (FAMILIA, 9)
     MICRO_FORTE = (FAMILIA, 9, "bold")
-    NUMERO = (FAMILIA, 22, "bold")
     ETIQUETA = (FAMILIA, 9, "bold")
     return FAMILIA
 
@@ -1113,8 +1129,25 @@ class Segmentado(tk.Canvas):
         largura = self._faixas[self.escolhida][1]
         self.coords(self._marcador, *self._forma(self._atual, largura))
 
+    DURACAO = 220        # milissegundos do trajeto inteiro
+
+    @staticmethod
+    def atenuar(fracao: float) -> float:
+        """Curva de atenuação: sai devagar, acelera, chega devagar.
+
+        É a *ease-in-out* cúbica — a mesma curva que as transições da web
+        usam por padrão. Substituiu uma mola exponencial (`anda 28% do que
+        falta a cada quadro`), que tinha dois defeitos: partia na velocidade
+        máxima, o que faz o movimento parecer um solavanco, e nunca chegava
+        ao destino — era preciso um corte arbitrário de 0,6px para dizer
+        "chegou". Aqui o trajeto tem começo, meio e fim declarados.
+        """
+        if fracao < 0.5:
+            return 4 * fracao ** 3
+        return 1 - ((-2 * fracao + 2) ** 3) / 2
+
     def _deslizar(self) -> None:
-        """Mola simples: cada quadro anda um pedaço do que falta."""
+        """Anda o indicador até o alvo, ao longo de `DURACAO`."""
         if not self.winfo_exists():
             return
         if self._tarefa:
@@ -1123,14 +1156,21 @@ class Segmentado(tk.Canvas):
             except tk.TclError:
                 pass
             self._tarefa = None
-        falta = self._alvo - self._atual
-        if abs(falta) < 0.6:
-            self._atual = self._alvo
-            self._repor()
+        self._partida = self._atual
+        self._inicio = time.monotonic()
+        self._quadro()
+
+    def _quadro(self) -> None:
+        if not self.winfo_exists():
             return
-        self._atual += falta * 0.28
+        decorrido = (time.monotonic() - self._inicio) * 1000
+        fracao = min(1.0, decorrido / self.DURACAO)
+        self._atual = self._partida + (self._alvo - self._partida) * self.atenuar(fracao)
         self._repor()
-        self._tarefa = self.after(16, self._deslizar)
+        if fracao >= 1.0:
+            self._tarefa = None
+            return
+        self._tarefa = self.after(16, self._quadro)
 
 
 class Redondo(tk.Canvas):
