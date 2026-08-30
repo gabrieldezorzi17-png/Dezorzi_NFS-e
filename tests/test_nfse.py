@@ -2787,7 +2787,7 @@ class MarcaNaTelaTests(unittest.TestCase):
         self.assertEqual((icone.width(), icone.height()), (40, 40))
 
     def test_a_assinatura_traz_o_nome_com_o_registrado(self):
-        self.assertEqual(marca.ASSINATURA, "Dezorzi®")
+        self.assertEqual(marca.ASSINATURA, "DINELLY®")
 
     def test_o_selo_segura_a_propria_imagem(self):
         # Sem a referência, o coletor do Python descarta a PhotoImage e o
@@ -6437,7 +6437,10 @@ class InstaladorTests(unittest.TestCase):
             if guardado[1] is not None:
                 os.environ["APPDATA"] = guardado[1]
         self.assertTrue(feitos, "nenhum atalho foi criado")
-        self.assertTrue((perfil / "Desktop" / "Dezorzi NFS-e.lnk").is_file())
+        self.assertTrue((perfil / "Desktop"
+                         / f"{instalador.NOME_VISIVEL}.lnk").is_file())
+        # E o nome de antes não fica para trás: um programa, um ícone.
+        self.assertFalse((perfil / "Desktop" / "Dezorzi NFS-e.lnk").is_file())
 
     def test_esperar_um_processo_que_nao_existe_termina_logo(self):
         inicio = time.time()
@@ -6596,7 +6599,7 @@ class RegistroNoWindowsTests(unittest.TestCase):
         exe.write_text("x", encoding="utf-8")
         self.assertTrue(instalador.registrar_no_windows(self.pasta, exe, "1.2.3"))
         dados = instalador.registrado()
-        self.assertIn("Dezorzi", dados["DisplayName"])
+        self.assertIn("DINELLY", dados["DisplayName"])
         self.assertEqual(dados["DisplayVersion"], "1.2.3")
         self.assertEqual(dados["InstallLocation"], str(self.pasta))
         self.assertIn("--desinstalar", dados["UninstallString"])
@@ -6759,3 +6762,132 @@ class TelaDaAtualizacaoTests(unittest.TestCase):
         self.assertIn("9.9.9", titulo)
         # E o aviso diz ONDE baixar, em vez de mandar procurar.
         self.assertIn("https://exemplo/i.exe", texto)
+
+
+class NomeQueApareceTests(unittest.TestCase):
+    """O nome lido é DINELLY; o endereço no disco continua o antigo.
+
+    A separação é deliberada e vale a pena estar escrita: a pasta
+    `%LOCALAPPDATA%/Dezorzi NFS-e` guarda as notas já emitidas, e renomeá-la
+    obrigaria a mover documento fiscal de lugar. Endereço estável é o que
+    garante que a atualização ache o que já está instalado.
+    """
+
+    def test_a_marca_diz_dinelly(self):
+        self.assertEqual(marca.NOME, "DINELLY")
+        self.assertEqual(marca.ASSINATURA, "DINELLY®")
+
+    def test_o_instalador_mostra_dinelly(self):
+        self.assertEqual(instalador.NOME_VISIVEL, "DINELLY NFS-e")
+
+    def test_o_endereco_no_disco_nao_mudou(self):
+        """Se este teste falhar, alguém acabou de mover as notas de lugar."""
+        self.assertEqual(instalador.NOME, "Dezorzi NFS-e")
+        self.assertEqual(instalador.EXECUTAVEL, "Dezorzi NFS-e.exe")
+        self.assertTrue(instalador.CHAVE_DO_WINDOWS.endswith("DezorziNFSe"))
+        self.assertEqual(instalador.pasta_do_usuario().name, "Dezorzi NFS-e")
+
+    def test_o_atalho_antigo_esta_na_lista_de_recolher(self):
+        self.assertIn("Dezorzi NFS-e", instalador.ATALHOS_ANTIGOS)
+
+
+class LogotipoJuntoDoProgramaTests(unittest.TestCase):
+    """O logotipo mora com o PROGRAMA, não com os dados.
+
+    No formato instalado as duas coisas ficam em pastas diferentes: o
+    programa em `app/`, os dados na pasta acima. Procurar o logotipo na pasta
+    dos dados faria o programa instalado nunca achá-lo — ele nunca é copiado
+    para lá.
+    """
+
+    def test_procura_onde_o_programa_esta(self):
+        origem = paths.EMBUTIDOS / "assets"
+        if origem.is_dir():
+            self.assertEqual(paths.ASSETS_DIR, origem)
+        else:
+            self.assertEqual(paths.ASSETS_DIR, paths.BASE_DIR / "assets")
+
+    def test_a_marca_aponta_para_esse_lugar(self):
+        self.assertEqual(marca.ARQUIVO, paths.ASSETS_DIR / "logo.png")
+
+    def test_a_pasta_de_assets_viaja_com_o_programa(self):
+        """`empacotar.PASTAS` é o que vai para o lado do .exe."""
+        self.assertIn("assets", empacotar.PASTAS)
+
+
+class EmblemaDaMarcaTests(unittest.TestCase):
+    """A marca aparece em placa clara — e a placa é o que a torna legível.
+
+    MEDIDO pela fórmula das WCAG, com o logotipo em uso: a metade escura fica
+    em 2,14:1 sobre a barra do tema escuro, e a metade dourada em 2,02:1
+    sobre o branco do tema claro. Cada tema apaga uma das duas metades.
+    """
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.raiz.geometry("300x160")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    def test_o_emblema_sai_do_tamanho_pedido(self):
+        for lado in (32, 42, 84):
+            selo = marca.emblema(self.raiz, lado, ui.NAVY)
+            selo.pack()
+            self.raiz.update_idletasks()
+            self.assertEqual(selo.imagem.height(), lado)
+            self.assertEqual(selo.imagem.width(), lado)
+
+    def test_nao_ha_placa_por_baixo(self):
+        """A placa branca virava um adesivo colado na barra escura."""
+        selo = marca.emblema(self.raiz, 42, ui.NAVY)
+        self.assertIsInstance(selo, tk.Label)
+        self.assertEqual(str(selo.cget("bg")), ui.NAVY)
+
+    def test_a_imagem_fica_presa_ao_widget(self):
+        """Sem alguém segurando, o Tk descarta a imagem e sobra um vazio."""
+        selo = marca.emblema(self.raiz, 42, ui.NAVY)
+        self.assertTrue(hasattr(selo, "imagem"))
+
+    def test_o_arquivo_divide_exato_nos_tamanhos_usados(self):
+        """O Tk só reduz por divisão inteira; sobra vira serrilhado."""
+        if not marca.ARQUIVO.exists():
+            self.skipTest("sem logotipo instalado")
+        for lado in (32, 42, 48, 56, 84):
+            selo = marca.emblema(self.raiz, lado, ui.NAVY)
+            self.assertEqual(selo.imagem.height(), lado,
+                             f"em {lado}px a redução não caiu no tamanho — o "
+                             "arquivo tem de dividir exato por ele")
+
+    def test_cada_tema_usa_a_sua_variante(self):
+        """Uma versão só apagaria metade da marca em um dos dois temas.
+
+        MEDIDO: grafite 2,14:1 sobre a barra escura; dourado 2,02:1 sobre o
+        branco. É o que justifica existirem dois arquivos.
+        """
+        if not marca.ARQUIVO_ESCURO.exists():
+            self.skipTest("sem a variante para fundo escuro")
+        ui.usar_tema("escuro")
+        self.assertEqual(marca._arquivo(), marca.ARQUIVO_ESCURO)
+        ui.usar_tema("claro")
+        self.assertEqual(marca._arquivo(), marca.ARQUIVO)
+
+    def test_sem_a_variante_escura_volta_para_a_original(self):
+        """Um arquivo faltando não pode deixar a marca sumir da tela."""
+        guardado = marca.ARQUIVO_ESCURO
+        marca.ARQUIVO_ESCURO = guardado.with_name("nao-existe.png")
+        try:
+            ui.usar_tema("escuro")
+            self.assertEqual(marca._arquivo(), marca.ARQUIVO)
+        finally:
+            marca.ARQUIVO_ESCURO = guardado

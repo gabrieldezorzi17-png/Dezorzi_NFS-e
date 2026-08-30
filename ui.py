@@ -1262,35 +1262,6 @@ def _rgb(cor: str) -> tuple[int, int, int]:
     return tuple(int(cor[i:i + 2], 16) for i in (1, 3, 5))
 
 
-def losango(pai: tk.Widget, texto: str, *, lado: int = 32,
-            fundo: str | None = None) -> tk.Canvas:
-    """O símbolo da marca: quadrado arredondado com degradê na diagonal.
-
-    O Canvas do Tk não preenche em gradiente, então o degradê é desenhado
-    linha a linha. Cada linha já nasce recortada pelo arco do canto — é isso
-    que arredonda a forma, sem máscara nem pixel a pixel.
-    """
-    tela = tk.Canvas(pai, width=lado, height=lado, bg=fundo or NAVY,
-                     highlightthickness=0, bd=0)
-    inicio, fim = _rgb(PRIMARIA), _rgb(ONDA)
-    raio = max(2, lado // 3.5)
-    for y in range(lado):
-        fracao = y / max(1, lado - 1)
-        cor = "#%02x%02x%02x" % tuple(
-            round(inicio[i] + (fim[i] - inicio[i]) * fracao) for i in range(3))
-        # Quanto o arco come desta linha, de cada lado.
-        recuo = 0.0
-        if y < raio:
-            recuo = raio - math.sqrt(max(0.0, raio * raio - (raio - y) ** 2))
-        elif y > lado - raio:
-            distancia = y - (lado - raio)
-            recuo = raio - math.sqrt(max(0.0, raio * raio - distancia ** 2))
-        tela.create_line(recuo, y, lado - recuo, y, fill=cor)
-    tela.create_text(lado / 2, lado / 2 + 1, text=texto, fill="#ffffff",
-                     font=(FAMILIA, max(8, lado // 3), "bold"))
-    return tela
-
-
 class Segmentado(tk.Canvas):
     """Navegação em pílula, com o realce deslizando de uma seção à outra.
 

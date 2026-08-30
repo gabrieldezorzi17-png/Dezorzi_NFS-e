@@ -1,43 +1,49 @@
-MARCA DEZORZI®
+MARCA DINELLY®
 ==============
 
 ONDE A MARCA APARECE
 --------------------
-De propósito, em dois lugares só:
+De propósito, em poucos lugares:
 
-  * o ícone da janela (barra de título e barra de tarefas) — o monograma;
-  * o nome "DEZORZI®" na barra do topo e uma linha no rodapé da tela de
-    entrada.
+  * o losango na barra do topo e na tela de entrada;
+  * o ícone da janela, da barra de tarefas e do atalho;
+  * uma linha "DINELLY®" no rodapé da tela de entrada.
 
 O programa é ferramenta de trabalho: quem o abre está atrás da nota. A marca
 assina, não decora.
 
-O monograma é desenhado por fórmula (ver marca.py): moldura verde-petróleo, o D
-usando a lateral esquerda como haste, o Z usando as barras de cima e de baixo, e
-os dois vazados dourados. É uma reconstrução do logotipo feita a partir da
-imagem — serve bem no tamanho de um ícone, mas não substitui o arquivo original.
+OS DOIS ARQUIVOS
+----------------
+    logo.png                    dourado e grafite — para fundo claro
+    logo-para-fundo-escuro.png  o grafite clareado — para fundo escuro
 
-PARA USAR O ARQUIVO OFICIAL
----------------------------
-Coloque o logotipo nesta pasta com o nome exato:
+São dois porque uma versão só apagaria metade da marca em um dos temas.
+Medido pela fórmula de contraste das WCAG:
 
-    logo.png
+    grafite sobre a barra do tema escuro    2,14:1   (some)
+    dourado sobre o branco do tema claro    2,02:1   (some)
 
-A partir daí ele passa a valer no lugar do desenho — é só copiar o arquivo
-para a pasta e abrir o programa de novo.
+O programa escolhe sozinho, pelo tema em vigor. Os dois têm fundo
+transparente: a marca assenta no fundo que estiver ali, sem placa por baixo.
 
-Recomendações para o arquivo:
-  * formato PNG (o Tk não lê JPG nem SVG);
-  * uns 600 px de altura — o programa reduz, não amplia;
-  * fundo branco, e não transparente: sobre a barra escura do topo, um fundo
-    transparente deixaria o miolo do D em azul-marinho.
+PARA TROCAR A MARCA
+-------------------
+Substitua os dois arquivos nesta pasta, mantendo os nomes. Recomendações:
 
-Para voltar ao desenho interno, basta apagar o logo.png.
+  * formato PNG, com transparência de verdade;
+  * 672 px de lado. O Tk só reduz por divisão inteira, e 672 divide exato
+    por 32, 42, 48, 56 e 84 — os tamanhos que o programa usa. Um número que
+    não divide exato deixa a diagonal serrilhada;
+  * quadrado, com uma folguinha para a ponta não encostar na borda.
+
+Para voltar ao desenho interno — o monograma antigo, feito por fórmula —,
+basta apagar os dois arquivos.
 
 CORES DA MARCA
 --------------
-    verde-petróleo   #245f66
-    dourado          #c3a059
+    dourado    #ceb55d
+    grafite    #4c4c4c
+    prata      #b6b8bc   (o grafite clareado, para fundo escuro)
 
-Ficam só no monograma. A paleta do programa é outra (ui.py) e continua como
+Ficam só na marca. A paleta do programa é outra (ui.py) e continua como
 estava — repintar as telas inteiras não é assinar, é chamar atenção.

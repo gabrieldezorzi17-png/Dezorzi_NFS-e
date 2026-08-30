@@ -1,9 +1,9 @@
-DEZORZI® · EMISSOR DE NFS-e
+DINELLY® · EMISSOR DE NFS-e
 ===========================
 
 PARA INSTALAR
 -------------
-Dois cliques em "Instalar Dezorzi NFS-e.exe". Ele pergunta duas coisas e faz
+Dois cliques em "Instalar DINELLY NFS-e.exe". Ele pergunta duas coisas e faz
 o resto:
 
   ONDE INSTALAR      já vem preenchido com a pasta de aplicativos do seu
@@ -16,12 +16,12 @@ Não precisa instalar Python nem nada. Da segunda vez em diante, abra pelo
 atalho — o programa abre em meio segundo. A primeira abertura é a única
 demorada, porque é quando ele se instala.
 
-Depois de instalado, o arquivo "Instalar Dezorzi NFS-e.exe" não serve mais
+Depois de instalado, o arquivo "Instalar DINELLY NFS-e.exe" não serve mais
 para nada: pode apagar.
 
 PARA REMOVER
 ------------
-Configurações do Windows > Aplicativos > Aplicativos instalados > Dezorzi
+Configurações do Windows > Aplicativos > Aplicativos instalados > DINELLY
 NFS-e > Desinstalar. Ele pergunta se as notas emitidas devem sair junto — e
 a caixa vem DESMARCADA: nota emitida é documento fiscal, e a prefeitura não
 guarda cópia para você.
@@ -34,7 +34,9 @@ ajustes não são tocados — moram fora da pasta que a atualização troca.
 
 ONDE ELE FICA
 -------------
-  (a pasta que você escolheu; por padrão %LOCALAPPDATA%\Dezorzi NFS-e\)
+  (a pasta que você escolheu; por padrão %LOCALAPPDATA%\Dezorzi NFS-e\ —
+   ela guarda o nome antigo por dentro de propósito: renomeá-la significaria
+   mover as notas já emitidas de lugar, e isso não se faz sem necessidade)
 
       app\              o programa. Esta pasta é TROCADA a cada atualização —
                         não guarde nada aqui dentro.

@@ -1,4 +1,4 @@
-"""A marca Dezorzi® dentro do programa: cores, monograma e assinatura.
+"""A marca DINELLY® dentro do programa: cores, monograma e assinatura.
 
 O monograma é **desenhado por fórmula**, não carregado de um arquivo de imagem.
 Dois motivos práticos: o programa continua sendo só biblioteca padrão e arquivos
@@ -24,7 +24,7 @@ import paths
 # --------------------------------------------------------------------------- #
 # Identidade
 # --------------------------------------------------------------------------- #
-NOME = "Dezorzi"
+NOME = "DINELLY"
 REGISTRADA = "®"
 ASSINATURA = f"{NOME}{REGISTRADA}"
 
@@ -38,7 +38,28 @@ FUNDO = "#ffffff"           # o miolo da marca é branco, não vazado
 # escura, um miolo vazado deixaria o D em azul-marinho e a leitura inverteria.
 # Como placa branca, a marca se aplica sobre qualquer fundo sem se desfigurar.
 
+# A arte como veio: dourado e grafite, fundo transparente. Vale sobre claro.
 ARQUIVO = paths.ASSETS_DIR / "logo.png"
+# A mesma arte com o grafite clareado, para não sumir sobre fundo escuro.
+ARQUIVO_ESCURO = paths.ASSETS_DIR / "logo-para-fundo-escuro.png"
+
+
+def _arquivo(escuro: bool | None = None) -> Path:
+    """Qual das duas variantes serve ao fundo de agora.
+
+    Sem `escuro`, pergunta ao tema em vigor. `ui` é importado aqui dentro e
+    não no topo: `ui` não conhece `marca`, e é bom que continue assim — a
+    paleta não deve depender da marca para existir.
+    """
+    if escuro is None:
+        try:
+            import ui
+
+            escuro = ui.TEMA == "escuro"
+        except Exception:
+            escuro = False
+    alvo = ARQUIVO_ESCURO if escuro else ARQUIVO
+    return alvo if alvo.exists() else ARQUIVO
 
 # --------------------------------------------------------------------------- #
 # Geometria do monograma
@@ -212,7 +233,8 @@ def amostrar(largura: int, altura: int) -> list[list[tuple[int, int, int]]]:
     return linhas
 
 
-def imagem(altura: int, pai: tk.Misc | None = None) -> tk.PhotoImage:
+def imagem(altura: int, pai: tk.Misc | None = None, *,
+           escuro: bool | None = None) -> tk.PhotoImage:
     """O monograma como imagem do Tk, desenhado no tamanho exato pedido.
 
     Desenhar no tamanho final, em vez de esticar uma imagem pronta, é o que
@@ -223,7 +245,7 @@ def imagem(altura: int, pai: tk.Misc | None = None) -> tk.PhotoImage:
     ``image "pyimageN" doesn't exist``. O que se guarda são os pixels
     calculados — a parte cara —, e montar a imagem a partir deles é rápido.
     """
-    do_arquivo = _do_arquivo(altura, pai)
+    do_arquivo = _do_arquivo(altura, pai, escuro=escuro)
     if do_arquivo is not None:
         return do_arquivo
 
@@ -237,17 +259,20 @@ def imagem(altura: int, pai: tk.Misc | None = None) -> tk.PhotoImage:
     return foto
 
 
-def _do_arquivo(altura: int, pai: tk.Misc | None = None) -> tk.PhotoImage | None:
-    """Usa ``assets/logo.png`` quando ele existe, reduzido para caber na altura.
+def _do_arquivo(altura: int, pai: tk.Misc | None = None, *,
+                escuro: bool | None = None) -> tk.PhotoImage | None:
+    """Usa o arquivo da marca, reduzido para caber na altura pedida.
 
-    O Tk só reduz por divisão inteira, então o resultado é aproximado — o
-    arquivo oficial deve ser exportado grande (uns 600 px de altura) para que a
-    redução caia bem nos tamanhos usados.
+    O Tk só reduz por divisão inteira: 672 dividido por 21 dá 32 exato, mas
+    600 por 19 dá 31,6 e o que sobra vira serrilhado na diagonal do losango.
+    Por isso o arquivo é gravado em 672 px, que divide exato por todos os
+    tamanhos usados aqui — ver `preparar_logotipo.py`.
     """
-    if not ARQUIVO.exists():
+    caminho = _arquivo(escuro)
+    if not caminho.exists():
         return None
     try:
-        original = tk.PhotoImage(master=pai, file=str(ARQUIVO))
+        original = tk.PhotoImage(master=pai, file=str(caminho))
     except tk.TclError:
         return None
     fator = max(1, round(original.height() / altura))
@@ -300,6 +325,11 @@ def icone(lado: int = 56, pai: tk.Misc | None = None) -> tk.PhotoImage:
     O símbolo é mais largo que alto; num ícone quadrado ele precisa de folga em
     cima e embaixo, senão o Windows estica e entorta o desenho.
     """
+    # Com arquivo da marca, ele já é quadrado e já vem com folga — era o
+    # desenho interno que precisava ser centrado num quadrado à mão.
+    do_arquivo = _do_arquivo(lado, pai)
+    if do_arquivo is not None:
+        return do_arquivo
     altura = max(1, round(lado * 0.62))
     largura = max(1, round(altura * U_LARGURA / U_ALTURA))
     foto = tk.PhotoImage(master=pai, width=lado, height=lado)
@@ -319,6 +349,23 @@ def selo(pai: tk.Widget, altura: int, fundo: str) -> tk.Label:
     imagem_ = imagem(altura, pai)
     etiqueta = tk.Label(pai, image=imagem_, bg=fundo, bd=0, highlightthickness=0)
     etiqueta.imagem = imagem_   # o Tk descarta a imagem se ninguém a segurar
+    return etiqueta
+
+
+def emblema(pai: tk.Widget, lado: int, fundo: str) -> tk.Label:
+    """A marca no tamanho pedido, assentada no fundo que estiver ali.
+
+    Sem placa: a variante certa para o tema já resolve o contraste, e uma
+    placa branca num programa de fundo escuro parece adesivo colado.
+
+    MEDIDO, pela fórmula das WCAG, se fosse uma versão só para os dois temas:
+    o grafite dá 2,14:1 sobre a barra escura e o dourado dá 2,02:1 sobre o
+    branco. É por isso que existem duas variantes, e não uma placa.
+    """
+    foto = imagem(lado, pai)
+    etiqueta = tk.Label(pai, image=foto, bg=fundo, bd=0, highlightthickness=0)
+    # O Tk descarta a imagem se ninguém a segurar.
+    etiqueta.imagem = foto
     return etiqueta
 
 

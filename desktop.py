@@ -277,7 +277,10 @@ class BarraDeComando(tk.Frame):
 
         marca_caixa = tk.Frame(self, bg=ui.NAVY)
         marca_caixa.pack(side="left")
-        ui.losango(marca_caixa, "DZ", lado=32, fundo=ui.NAVY).pack(side="left")
+        # 42 e não 32: o losango ocupa metade da área do quadrado que o
+        # cerca — é a geometria da forma —, então no mesmo tamanho da antiga
+        # sigla de duas letras ele lê menor do que ela.
+        marca.emblema(marca_caixa, ui.px(42), ui.NAVY).pack(side="left")
         nomes = tk.Frame(marca_caixa, bg=ui.NAVY)
         nomes.pack(side="left", padx=(ui.E2, 0))
         # A marca, e não um nome de produto inventado: é o programa da casa.
@@ -843,8 +846,7 @@ class NfseDesktop(tk.Tk):
 
         topo = tk.Frame(centro, bg=ui.BG)
         topo.pack(pady=(0, ui.E5))
-        tk.Label(topo, text="NF", bg=ui.PRIMARIA, fg="white",
-                 font=(ui.FAMILIA, 15, "bold"), padx=12, pady=7).pack()
+        marca.emblema(topo, ui.px(84), ui.BG).pack()
         tk.Label(centro, text="Entrar no portal", bg=ui.BG, fg=ui.INK,
                  font=ui.DISPLAY).pack()
         tk.Label(centro, text="Use o login da empresa que vai emitir a nota.",

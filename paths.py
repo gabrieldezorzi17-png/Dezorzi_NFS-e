@@ -120,7 +120,13 @@ HOME_DIR = Path(os.environ["NFSE_HOME"]).expanduser().resolve() if os.environ.ge
 
 ENV_FILE = BASE_DIR / ".env"
 STATIC_DIR = BASE_DIR / "static"
-ASSETS_DIR = BASE_DIR / "assets"   # logotipo e afins acompanham o programa
+# O logotipo acompanha o PROGRAMA, não os dados — e no formato instalado essas
+# duas coisas moram em pastas diferentes: o programa vai em `app/`, que é
+# trocada a cada versão, e os dados ficam na pasta acima. Procurar só em
+# BASE_DIR faria o programa instalado nunca achar o logotipo, porque ele nunca
+# é copiado para lá. Por isso se olha primeiro onde o programa está.
+ASSETS_DIR = ((EMBUTIDOS / "assets") if (EMBUTIDOS / "assets").is_dir()
+              else BASE_DIR / "assets")
 CONFIG_DIR = HOME_DIR / "config"
 DATA_DIR = HOME_DIR / "data"
 REQUEST_TEMPLATE = CONFIG_DIR / "request_template.json"

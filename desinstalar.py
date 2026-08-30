@@ -107,7 +107,7 @@ def perguntar() -> bool:
     ui.usar_tema("escuro")
     ui.escolher_familia(janela)
     ui.aplicar_estilo(janela)
-    janela.title(f"Remover {instalador.NOME}")
+    janela.title(f"Remover {instalador.NOME_VISIVEL}")
     janela.configure(bg=ui.BG)
     janela.resizable(False, False)
     try:
@@ -119,7 +119,7 @@ def perguntar() -> bool:
     feito = {"sim": False}
     corpo = tk.Frame(janela, bg=ui.BG, padx=ui.E6, pady=ui.E5)
     corpo.pack(fill="both", expand=True)
-    tk.Label(corpo, text=f"Remover o {instalador.NOME}?",
+    tk.Label(corpo, text=f"Remover o {instalador.NOME_VISIVEL}?",
              font=(ui.FAMILIA, 15, "bold"), bg=ui.BG, fg=ui.INK).pack(anchor="w")
 
     cartao = ui.Redondo(corpo, raio=14, fundo=ui.SURFACE, borda=ui.BORDER,

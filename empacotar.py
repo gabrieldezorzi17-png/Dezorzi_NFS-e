@@ -354,7 +354,9 @@ def conferir(alvo: Path, *, unico: bool, seguro: bool) -> None:
     print(f"  transmissão: {'MODO SEGURO — não envia' if seguro else 'ATIVA — envia de verdade'}")
 
 
-NOME_INSTALADOR = f"Instalar {NOME}"
+# O nome do arquivo baixado é o primeiro contato com a marca; o do
+# executável de dentro é endereço, e continua como está (ver instalador.py).
+NOME_INSTALADOR = "Instalar DINELLY NFS-e"
 
 
 def compactar_o_programa(pasta_do_programa: Path) -> Path:

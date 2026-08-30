@@ -49,8 +49,17 @@ import time
 import zipfile
 from pathlib import Path
 
+# ENDEREÇO, não rótulo: é o nome da pasta instalada, do executável e da
+# chave no registro. Trocá-lo obrigaria a mover a instalação que já existe —
+# com as notas dentro — e nota emitida é documento fiscal. Fica como está.
 NOME = "Dezorzi NFS-e"
 EXECUTAVEL = f"{NOME}.exe"
+
+# O que a pessoa lê. Onde os dois se cruzam, vale este.
+NOME_VISIVEL = "DINELLY NFS-e"
+# Nomes de atalho de versões anteriores, recolhidos ao instalar: sem isso a
+# Área de Trabalho ficaria com dois ícones do mesmo programa.
+ATALHOS_ANTIGOS = ("Dezorzi NFS-e",)
 PASTA_DO_PROGRAMA = "app"
 # A pasta viaja compactada: 27 MB de programa viram 12,6 MB de download, e
 # descompactar um arquivo só leva ~1,2 s contra os 412 que o PyInstaller
@@ -338,15 +347,16 @@ def criar_atalhos(exe: Path, *, area: bool = True,
     """
     if sys.platform != "win32":
         return []
+    _recolher_atalhos_antigos()
     alvos: list[Path] = []
     if area:
         pasta = area_de_trabalho()
         if pasta is not None:
-            alvos.append(pasta / f"{NOME}.lnk")
+            alvos.append(pasta / f"{NOME_VISIVEL}.lnk")
     if menu:
         pasta = menu_iniciar()
         if pasta is not None:
-            alvos.append(pasta / f"{NOME}.lnk")
+            alvos.append(pasta / f"{NOME_VISIVEL}.lnk")
 
     feitos: list[Path] = []
     for atalho in alvos:
@@ -369,19 +379,32 @@ def criar_atalhos(exe: Path, *, area: bool = True,
     return feitos
 
 
+def _recolher_atalhos_antigos() -> None:
+    """Apaga atalhos com o nome de antes. Um programa, um ícone."""
+    for pasta in (area_de_trabalho(), menu_iniciar()):
+        if pasta is None:
+            continue
+        for antigo in ATALHOS_ANTIGOS:
+            try:
+                (pasta / f"{antigo}.lnk").unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
 def apagar_atalhos() -> list[Path]:
-    """Tira os atalhos que este instalador criou."""
+    """Tira os atalhos deste programa — os de agora e os de antes."""
     apagados = []
     for pasta in (area_de_trabalho(), menu_iniciar()):
         if pasta is None:
             continue
-        atalho = pasta / f"{NOME}.lnk"
-        try:
-            if atalho.exists():
-                atalho.unlink()
-                apagados.append(atalho)
-        except OSError:
-            pass
+        for nome in (NOME_VISIVEL, *ATALHOS_ANTIGOS):
+            atalho = pasta / f"{nome}.lnk"
+            try:
+                if atalho.exists():
+                    atalho.unlink()
+                    apagados.append(atalho)
+            except OSError:
+                pass
     return apagados
 
 
@@ -418,9 +441,9 @@ def registrar_no_windows(raiz: Path, exe: Path, versao: str) -> bool:
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CHAVE_DO_WINDOWS) as chave:
             texto = winreg.REG_SZ
             for nome, valor in (
-                ("DisplayName", f"{NOME} — Emissor de NFS-e"),
+                ("DisplayName", f"{NOME_VISIVEL} — Emissor de NFS-e"),
                 ("DisplayVersion", versao or "1.0"),
-                ("Publisher", "Dezorzi"),
+                ("Publisher", "DINELLY"),
                 ("InstallLocation", str(raiz)),
                 ("DisplayIcon", str(exe)),
                 ("UninstallString", f'"{exe}" --desinstalar'),
@@ -492,7 +515,7 @@ def _tela():
         ui.usar_tema("escuro")
         ui.escolher_familia(janela)
         ui.aplicar_estilo(janela)
-        janela.title(f"Instalar {NOME}")
+        janela.title(f"Instalar {NOME_VISIVEL}")
         janela.configure(bg=ui.BG)
         janela.resizable(False, False)
         try:
@@ -552,17 +575,15 @@ class Assistente:
         try:
             import marca
 
-            # `icone` e não `imagem`: o símbolo é mais largo que alto, e
-            # `icone` já o centra num quadrado com folga. Solto, ele encosta
-            # nas bordas e parece cortado.
-            self._selo = marca.icone(ui.px(42), self.janela)
-            tk.Label(topo, image=self._selo, bg=ui.BG).pack(side="left",
-                                                            padx=(0, ui.E3))
+            # O mesmo emblema do programa: quem instala e quem abre têm de
+            # ver a mesma marca, com a mesma placa e o mesmo canto.
+            marca.emblema(topo, ui.px(42), ui.BG).pack(side="left",
+                                                       padx=(0, ui.E3))
         except Exception:
             pass
         titulos = tk.Frame(topo, bg=ui.BG)
         titulos.pack(side="left", anchor="w")
-        tk.Label(titulos, text=NOME, font=(ui.FAMILIA, 17, "bold"),
+        tk.Label(titulos, text=NOME_VISIVEL, font=(ui.FAMILIA, 17, "bold"),
                  bg=ui.BG, fg=ui.INK).pack(anchor="w")
         tk.Label(titulos, text=f"Emissor de NFS-e · versão {self.versao}",
                  font=ui.PEQUENO, bg=ui.BG, fg=ui.INK_3).pack(anchor="w")
@@ -655,7 +676,7 @@ class Assistente:
         self.botao.configure(text="Atualizar" if ja else "Instalar")
         self.aviso.configure(
             fg=ui.INK_3,
-            text=("Já existe um Dezorzi NFS-e aqui. As notas e os ajustes "
+            text=(f"Já existe um {NOME_VISIVEL} aqui. As notas e os ajustes "
                   "continuam onde estão; só o programa é trocado." if ja else
                   "As notas emitidas e os ajustes ficam nesta pasta, fora da "
                   "parte que a atualização troca — atualizar não apaga nada."))
@@ -702,7 +723,7 @@ class Assistente:
                  font=(ui.FAMILIA, 15, "bold")).pack(anchor="w")
         onde = ("O atalho está na Área de Trabalho."
                 if self.quer_area.get() else
-                "Procure por Dezorzi no menu Iniciar."
+                "Procure por DINELLY no menu Iniciar."
                 if self.quer_menu.get() else
                 f"O programa está em {exe.parent}.")
         tk.Label(self.dentro, text=onde + " Abrir daqui em diante leva menos "
