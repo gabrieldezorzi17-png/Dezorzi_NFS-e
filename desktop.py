@@ -2151,16 +2151,17 @@ class NfseDesktop(tk.Tk):
         Perguntar ali seria só um botão entre ela e o trabalho, e a resposta
         seria sempre a mesma.
 
-        No formato de pasta não há troca automática: o `.exe` não anda sem o
-        `_internal/` do lado, e trocar só um deixaria os dois em versões
-        diferentes — quebra difícil de entender. Ali o aviso é só aviso.
+        Nem toda cópia consegue se trocar sozinha — `updater.da_para_aplicar`
+        decide, e o critério é o anúncio, não o formato daqui. Quando não dá,
+        o aviso diz o endereço em vez de mandar procurar.
         """
-        if updater.formato() != "unico":
+        if not updater.da_para_aplicar(nova):
             self._info(
                 f"Versão {nova.versao} disponível",
-                "Esta cópia é a de pasta, que se atualiza trocando a pasta "
-                "inteira. Baixe a versão nova e substitua a pasta do programa.",
-                segundos=12,
+                "Esta cópia é uma pasta solta, que se atualiza trocando a "
+                "pasta inteira. Baixe o instalador e abra:\n\n"
+                f"{nova.url}",
+                segundos=20,
             )
             return
 

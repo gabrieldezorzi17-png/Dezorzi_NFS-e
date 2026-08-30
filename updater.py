@@ -32,12 +32,18 @@ prefeitura. Por isso há três travas, e nenhuma delas é opcional:
    porque a pessoa acabou de dar dois cliques no ícone. Aí ela é aplicada sem
    perguntar: um botão ali seria só um passo entre quem abriu e o trabalho.
 
-FORMATO DE PASTA
-----------------
-Só o executável de arquivo único se atualiza sozinho. No formato de pasta o
-`.exe` não anda sem o `_internal/` do lado, e trocar só o `.exe` deixaria os
-dois de versões diferentes — que é pior que não atualizar. Nesse formato o
-programa avisa que há versão nova e mostra onde baixá-la.
+QUEM SE ATUALIZA SOZINHO
+------------------------
+Quase tudo, e por dois caminhos diferentes (ver `da_para_aplicar`):
+
+* o programa INSTALADO — o formato de hoje — baixa o instalador e o deixa
+  trocar a pasta inteira, que é o que ele sabe fazer;
+* a cópia de ARQUIVO ÚNICO baixa o .exe e troca um arquivo por outro, pelo
+  roteiro `.bat`.
+
+Só fica de fora a cópia solta da pasta recebendo um anúncio sem instalador:
+ali o `.exe` não anda sem o `_internal/` do lado, e trocar só um deixaria os
+dois em versões diferentes. Nesse caso o programa avisa e mostra o endereço.
 
 O ANÚNCIO
 ---------
@@ -71,7 +77,7 @@ import registro
 # A versão desta compilação. `empacotar.py` a lê para nomear o que publica, e
 # a tela de Ajustes a mostra — quem dá suporte precisa saber o que está rodando
 # sem pedir para o usuário abrir arquivo nenhum.
-VERSAO_ATUAL = "1.0.15"
+VERSAO_ATUAL = "1.0.16"
 
 VARIAVEL_URL = "NFSE_ATUALIZACAO_URL"
 ESPERA_REDE = 12          # segundos; a abertura não pode depender da internet
@@ -143,6 +149,26 @@ def formato() -> str:
 
 def executavel_em_uso() -> Path:
     return Path(sys.executable).resolve()
+
+
+def da_para_aplicar(nova: "Atualizacao") -> bool:
+    """Esta cópia consegue aplicar ESTA atualização sozinha?
+
+    A pergunta não é "que formato eu sou" — foi assim durante um tempo, e por
+    isso o programa instalado passou três versões mandando baixar à mão uma
+    atualização que ele sabia aplicar.
+
+    * Anúncio com INSTALADOR: ele troca a pasta inteira. Serve para o formato
+      de pasta e para o instalado, que é como o programa é entregue hoje.
+    * Cópia de ARQUIVO ÚNICO: a troca é de um arquivo por outro, que é o que
+      o roteiro `.bat` faz.
+
+    O que sobra é uma cópia solta da pasta com um anúncio antigo: ali trocar
+    só o `.exe` o deixaria em versão diferente do `_internal/` do lado.
+    """
+    if formato() == "codigo":
+        return False
+    return bool(getattr(nova, "instalador", False)) or formato() == "unico"
 
 
 # --------------------------------------------------------------------------- #

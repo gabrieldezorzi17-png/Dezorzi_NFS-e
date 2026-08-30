@@ -6661,3 +6661,101 @@ class RemocaoTests(unittest.TestCase):
         roteiro = Path(self.chamadas[0][0][0][2]).read_text(encoding="ascii")
         self.assertIn("NFSE_PID", roteiro)
         self.assertIn("goto esperar", roteiro)
+
+
+class QuemSeAtualizaSozinhoTests(unittest.TestCase):
+    """O programa INSTALADO se atualiza — e passou três versões sem se atualizar.
+
+    A tela perguntava "sou um arquivo único?", que era a pergunta certa
+    enquanto o arquivo único era o formato distribuído. Desde a 1.0.12 o que
+    se entrega é a pasta posta no lugar por um instalador, e a resposta
+    passou a ser não — então o programa instalado mostrava um aviso mandando
+    baixar à mão uma atualização que ele sabia aplicar.
+
+    A pergunta certa é sobre o ANÚNCIO: se ele traz um instalador, dá para
+    aplicar, seja qual for o formato daqui.
+    """
+
+    def _anuncio(self, *, instalador):
+        return updater.Atualizacao(versao="9.9.9", url="https://exemplo/i.exe",
+                                   sha256="a" * 64, instalador=instalador)
+
+    def _com_formato(self, nome):
+        return unittest.mock.patch.object(updater, "formato", lambda: nome)
+
+    def test_instalado_aplica_o_instalador(self):
+        """O caso que estava quebrado."""
+        with self._com_formato("pasta"):
+            self.assertTrue(updater.da_para_aplicar(self._anuncio(instalador=True)))
+
+    def test_arquivo_unico_continua_aplicando(self):
+        with self._com_formato("unico"):
+            self.assertTrue(updater.da_para_aplicar(self._anuncio(instalador=True)))
+            self.assertTrue(updater.da_para_aplicar(self._anuncio(instalador=False)))
+
+    def test_pasta_solta_com_anuncio_antigo_nao_aplica(self):
+        """Trocar só o .exe o deixaria em versão diferente do _internal/."""
+        with self._com_formato("pasta"):
+            self.assertFalse(updater.da_para_aplicar(self._anuncio(instalador=False)))
+
+    def test_rodando_do_codigo_nunca_aplica(self):
+        with self._com_formato("codigo"):
+            self.assertFalse(updater.da_para_aplicar(self._anuncio(instalador=True)))
+
+
+class TelaDaAtualizacaoTests(unittest.TestCase):
+    """A tela tem de CHEGAR ao download quando dá para aplicar.
+
+    O teste de `da_para_aplicar` sozinho não pegaria o defeito de novo: ele
+    estava em quem faz a pergunta, não em quem responde.
+    """
+
+    def setUp(self):
+        try:
+            self.app = desktop.NfseDesktop()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        self.app.withdraw()
+        self.avisos = []
+        self.app._info = lambda titulo, texto="", **k: self.avisos.append(
+            (titulo, texto))
+        self.originais = (updater.formato, updater.baixar)
+        self.addCleanup(self._restaurar)
+
+    def _restaurar(self):
+        updater.formato, updater.baixar = self.originais
+        try:
+            self.app.destroy()
+        except Exception:
+            pass
+
+    def _anuncio(self, *, instalador):
+        return updater.Atualizacao(versao="9.9.9", url="https://exemplo/i.exe",
+                                   sha256="a" * 64, instalador=instalador)
+
+    def _janela_de_atualizacao(self):
+        return [j for j in self.app.winfo_children()
+                if isinstance(j, tk.Toplevel)
+                and "Atualiz" in str(j.title())]
+
+    def test_instalado_abre_a_janela_de_atualizacao(self):
+        updater.formato = lambda: "pasta"
+        # O download fica pendurado: o que se mede é ter COMEÇADO.
+        updater.baixar = lambda nova, progresso=None: (time.sleep(5), Path("x"))[1]
+        self.app._oferecer_atualizacao(self._anuncio(instalador=True))
+        self.app.update()
+        self.assertTrue(self._janela_de_atualizacao(),
+                        f"não começou a atualizar; avisou: {self.avisos}")
+        self.assertTrue(self.app._busy)
+
+    def test_pasta_solta_com_anuncio_antigo_so_avisa(self):
+        updater.formato = lambda: "pasta"
+        updater.baixar = lambda *a, **k: self.fail("não devia baixar")
+        self.app._oferecer_atualizacao(self._anuncio(instalador=False))
+        self.app.update()
+        self.assertFalse(self._janela_de_atualizacao())
+        self.assertEqual(len(self.avisos), 1)
+        titulo, texto = self.avisos[0]
+        self.assertIn("9.9.9", titulo)
+        # E o aviso diz ONDE baixar, em vez de mandar procurar.
+        self.assertIn("https://exemplo/i.exe", texto)
