@@ -5027,3 +5027,95 @@ class PastaDoArquivoUnicoTests(unittest.TestCase):
             primeira = paths._raiz()
             self._fingir(exe=pathlib.Path(outro).resolve() / "app.exe", unico=True)
             self.assertEqual(paths._raiz(), primeira)
+
+
+class ContrasteWCAGTests(unittest.TestCase):
+    """A paleta passa nas WCAG 2.1, nível AA (critério 1.4.3)?
+
+    A norma pede razão de contraste de 4,5:1 para texto normal e 3:1 para
+    texto grande. Não é questão de gosto: é a conta da luminância relativa,
+    definida na própria norma, e ou o número passa ou não passa.
+
+    Medindo a tela inteira nos dois temas, 24 de 72 combinações reprovavam —
+    o cinza dos rótulos secundários dava 2,68:1 sobre o branco. Estes testes
+    seguram o que foi corrigido.
+    """
+
+    @staticmethod
+    def _canal(valor: float) -> float:
+        valor /= 255.0
+        return valor / 12.92 if valor <= 0.03928 else ((valor + 0.055) / 1.055) ** 2.4
+
+    @classmethod
+    def luminancia(cls, cor: str) -> float:
+        cor = cor.lstrip("#")
+        r, g, b = (int(cor[i:i + 2], 16) for i in (0, 2, 4))
+        return (0.2126 * cls._canal(r) + 0.7152 * cls._canal(g)
+                + 0.0722 * cls._canal(b))
+
+    @classmethod
+    def razao(cls, frente: str, fundo: str) -> float:
+        a, b = cls.luminancia(frente), cls.luminancia(fundo)
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+    def tearDown(self):
+        ui.usar_tema("claro")
+
+    def _conferir(self, pares, minimo=4.5):
+        reprovados = []
+        for tema in ("claro", "escuro"):
+            ui.usar_tema(tema)
+            for nome_frente, nome_fundo in pares:
+                frente = getattr(ui, nome_frente)
+                fundo = getattr(ui, nome_fundo)
+                valor = self.razao(frente, fundo)
+                if valor < minimo:
+                    reprovados.append(
+                        f"{tema}: {nome_frente} ({frente}) sobre "
+                        f"{nome_fundo} ({fundo}) = {valor:.2f}:1")
+        self.assertEqual(reprovados, [], "\n".join([""] + reprovados))
+
+    def test_a_conta_bate_com_os_valores_da_norma(self):
+        # Preto sobre branco é 21:1, o máximo possível; e a razão é simétrica.
+        self.assertAlmostEqual(self.razao("#000000", "#ffffff"), 21.0, places=2)
+        self.assertAlmostEqual(self.razao("#ffffff", "#000000"), 21.0, places=2)
+        self.assertAlmostEqual(self.razao("#777777", "#ffffff"), 4.48, places=2)
+
+    def test_os_tres_tons_de_texto_sobre_as_superficies(self):
+        self._conferir([(tinta, fundo)
+                        for tinta in ("INK", "INK_2", "INK_3")
+                        for fundo in ("BG", "SURFACE", "SURFACE_ALT")])
+
+    def test_o_texto_da_barra_de_comando(self):
+        self._conferir([("INK", "NAVY"), ("NAV_TEXTO", "NAVY"),
+                        ("NAV_LEGENDA", "NAVY"), ("NAV_MONO", "NAVY"),
+                        ("NAV_DESTAQUE", "NAVY")])
+
+    def test_as_pilulas_de_situacao(self):
+        # "Emitida", "Rascunho", "Falhou": o selo tem de se ler à distância.
+        self._conferir([("SUCESSO", "SUCESSO_BG"), ("ALERTA", "ALERTA_BG"),
+                        ("ERRO", "ERRO_BG"), ("INFO", "INFO_BG"),
+                        ("NEUTRO", "NEUTRO_BG")])
+
+    def test_o_branco_sobre_os_preenchimentos_fortes(self):
+        for tema in ("claro", "escuro"):
+            ui.usar_tema(tema)
+            for nome in ("PRIMARIA", "PRIMARIA_HOVER", "PRIMARIA_PRESS",
+                         "ERRO_SOLIDO"):
+                cor = getattr(ui, nome)
+                tinta = ui.contraste(cor)
+                valor = self.razao(tinta, cor)
+                self.assertGreaterEqual(
+                    valor, 4.5,
+                    f"{tema}: {tinta} sobre {nome} ({cor}) = {valor:.2f}:1")
+
+    def test_a_escolha_automatica_de_tinta_sempre_passa(self):
+        """`contraste()` tem de devolver a tinta que de fato se lê."""
+        for tema in ("claro", "escuro"):
+            ui.usar_tema(tema)
+            for nome in ("SUCESSO", "ALERTA", "ERRO", "INFO", "NEUTRO",
+                         "PRIMARIA", "SURFACE", "SURFACE_ALT", "BG", "NAVY"):
+                cor = getattr(ui, nome)
+                valor = self.razao(ui.contraste(cor), cor)
+                self.assertGreaterEqual(
+                    valor, 4.5, f"{tema}: contraste({nome}={cor}) = {valor:.2f}:1")

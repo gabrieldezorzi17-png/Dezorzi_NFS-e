@@ -44,7 +44,9 @@ CLARO = {
     "BORDER_FORTE": "#dbe0ec",
     "INK": "#10131f",
     "INK_2": "#4e5670",
-    "INK_3": "#8a92a9",
+    # #8a92a9 dava 2,68:1 sobre o branco — a WCAG pede 4,5:1 para texto
+    # normal, e este tom carrega o CCM, a data e os rótulos das colunas.
+    "INK_3": "#636c87",
 
     # A barra de comando, no alto. Não é mais uma coluna escura à esquerda:
     # é uma faixa da mesma família da chapa, separada por um fio.
@@ -52,7 +54,7 @@ CLARO = {
     "NAVY_HOVER": "#f5f6fb",
     "NAVY_ATIVO": "#efeafe",
     "NAV_TEXTO": "#4e5670",
-    "NAV_LEGENDA": "#8a92a9",
+    "NAV_LEGENDA": "#6c7693",   # era #8a92a9: 3,10:1 na barra clara
     "NAV_ACAO": "#4e5670",
     "NAV_ASSINATURA": "#a3aabd",
     "NAV_DESTAQUE": "#5b34f0",
@@ -66,9 +68,9 @@ CLARO = {
     "PRIMARIA_FRACA": "#c3b2fa",
     "ONDA": "#0e9cb8",
 
-    "SUCESSO": "#08935f", "SUCESSO_BG": "#dcf7ec",
-    "ALERTA": "#a06a00", "ALERTA_BG": "#fdf0d6",
-    "ERRO": "#d02649", "ERRO_BG": "#fde7ec",
+    "SUCESSO": "#077e52", "SUCESSO_BG": "#dcf7ec",
+    "ALERTA": "#966400", "ALERTA_BG": "#fdf0d6",   # 4,08:1 -> 4,52:1
+    "ERRO": "#cd2548", "ERRO_BG": "#fde7ec",
     "INFO": "#4122c2", "INFO_BG": "#efeafe",
     "NEUTRO": "#4e5670", "NEUTRO_BG": "#eef0f6",
 
@@ -90,19 +92,20 @@ ESCURO = {
     "BORDER_FORTE": "#232b3d",
     "INK": "#e9ecf7",
     "INK_2": "#97a0bb",
-    "INK_3": "#5b6480",
+    "INK_3": "#7983a0",     # era #5b6480: 2,90:1 sobre o fundo, reprovava
 
     "NAVY": "#10141f",
     "NAVY_HOVER": "#171d2c",
     "NAVY_ATIVO": "#1c1a3d",
     "NAV_TEXTO": "#97a0bb",
-    "NAV_LEGENDA": "#5b6480",
+    "NAV_LEGENDA": "#737d9c",   # era #5b6480: 3,13:1 na barra escura
     "NAV_ACAO": "#97a0bb",
     "NAV_ASSINATURA": "#454e66",
     "NAV_DESTAQUE": "#a58bff",
     "NAV_MONO": "#97a0bb",
 
-    "PRIMARIA": "#7b5cff",
+    # Escurecida o bastante para o branco por cima passar: era 4,36:1.
+    "PRIMARIA": "#7858ff",
     "PRIMARIA_HOVER": "#6a49f5",
     "PRIMARIA_PRESS": "#5a39e6",
     "PRIMARIA_CLARA": "#1c1a3d",
@@ -944,6 +947,27 @@ def icone_vetor(pai: tk.Widget, nome: str, *, cor: str, fundo: str,
     return tela
 
 
+def luminancia_relativa(cor: str) -> float:
+    """A luminância relativa da cor, pela fórmula das WCAG 2.1.
+
+    É a base da razão de contraste da norma. O canal passa por uma correção
+    de gama antes de ser ponderado — média simples de RGB não descreve o que
+    o olho enxerga, e é onde as aproximações caseiras erram.
+    """
+    def canal(valor: int) -> float:
+        v = valor / 255.0
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+
+    r, g, b = int(cor[1:3], 16), int(cor[3:5], 16), int(cor[5:7], 16)
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b)
+
+
+def razao_de_contraste(frente: str, fundo: str) -> float:
+    """Quanto uma cor se destaca da outra. A WCAG AA pede 4,5:1 para texto."""
+    a, b = luminancia_relativa(frente), luminancia_relativa(fundo)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+
 def contraste(cor: str) -> str:
     """Preto ou branco — o que for legível sobre a cor dada.
 
@@ -951,14 +975,20 @@ def contraste(cor: str) -> str:
     com verde escuro no claro. Fixar "branco" acertaria num tema e deixaria o
     outro ilegível; a conta decide sozinha, em qualquer paleta futura.
     """
+    escuro, claro = "#0b1020", "#ffffff"
     try:
-        r, g, b = int(cor[1:3], 16), int(cor[3:5], 16), int(cor[5:7], 16)
+        alvo = luminancia_relativa(cor)
     except (ValueError, IndexError):
-        return "#ffffff"
-    # Ponderação aproximada de luminância: o olho enxerga verde muito mais
-    # que azul, e um #0000ff "escuro" enganaria uma média simples.
-    luz = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-    return "#0b1020" if luz > 0.6 else "#ffffff"
+        return claro
+    # Calcula a razão com as duas tintas e fica com a que ganha, em vez de
+    # decidir por um limiar de brilho. O limiar antigo (0,6 sobre uma média
+    # ponderada) escolhia branco sobre o rosa #ff5c7c e dava 2,97:1 — abaixo
+    # dos 4,5:1 que a WCAG pede. A razão não tem limiar para errar.
+    def razao(tinta: str) -> float:
+        a, b = luminancia_relativa(tinta), alvo
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+    return escuro if razao(escuro) >= razao(claro) else claro
 
 
 TONS_DE_FILTRO = {

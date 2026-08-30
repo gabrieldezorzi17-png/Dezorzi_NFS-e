@@ -1079,8 +1079,10 @@ class NfseDesktop(tk.Tk):
         rodape = tk.Frame(caixa.interior, bg=ui.SURFACE, padx=ui.E4,
                           pady=ui.E3)
         rodape.pack(fill="x")
+        # O roxo de PREENCHIMENTO nao serve como TEXTO sobre fundo escuro —
+        # dava 4,36:1. INFO e o mesmo roxo na versao que se le: 7,01:1.
         ver_todas = tk.Label(rodape, text=f"Ver todas as {len(emitidas)}  ›",
-                             bg=ui.SURFACE, fg=ui.PRIMARIA, font=ui.PEQUENO_FORTE,
+                             bg=ui.SURFACE, fg=ui.INFO, font=ui.PEQUENO_FORTE,
                              cursor="hand2")
         ver_todas.pack(anchor="w")
         ver_todas.bind("<Button-1>", lambda _e: self.show_documents())
