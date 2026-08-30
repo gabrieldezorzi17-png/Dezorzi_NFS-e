@@ -197,7 +197,7 @@ def colunas_de_notas() -> list["ui.Celula"]:
         ui.Celula("valor", "Valor", 86, tipo="dinheiro", fim=True),
         ui.Celula("status", "Situação", 120, tipo="pilula"),
         ui.Celula("data", "Emissão", 86, tipo="duplo", fim=True),
-        ui.Celula("acoes", "", 52, tipo="acoes", fim=True),
+        ui.Celula("acoes", "", 52, tipo="acoes", fim=True, ordenavel=False),
     ]
 
 
@@ -3563,6 +3563,9 @@ class ViewDocumentos(tk.Frame):
         self.docs = storage.list_all()
         self.situacao = ""            # "" = todas
         self.procurado = ""
+        # `None` = a ordem natural: a mais recente primeiro. É o que faz
+        # sentido ao abrir, porque a nota que se procura costuma ser a última.
+        self.ordem: tuple[str, bool] | None = None
         self._tarefa_data: str | None = None
 
         # Calculado uma vez. Estes três não mudam enquanto a tela está aberta,
@@ -3593,6 +3596,7 @@ class ViewDocumentos(tk.Frame):
 
         self._montar_tabela()
         self._montar_rodape()
+        self._ligar_teclado()
         self.atualizar()
         self._desenhar_detalhe()
 
@@ -3691,12 +3695,92 @@ class ViewDocumentos(tk.Frame):
             ao_selecionar=self._selecionar,
             ao_abrir=lambda identidade: self.app._details((identidade,)),
             ao_agir=self._agir_na_linha,
+            ao_ordenar=self._ordenar_por,
         )
         self.tabela.pack(fill="both", expand=True)
 
         # O estado vazio mora ao lado da tabela e troca de lugar com ela — em
         # vez de a tabela ser destruída e refeita quando o filtro não acha nada.
         self.aviso_vazio = tk.Frame(moldura.interior, bg=ui.SURFACE)
+
+    # ------------------------------------------------------------------ #
+    # Teclado
+    # ------------------------------------------------------------------ #
+
+    def _ligar_teclado(self) -> None:
+        """Setas andam pela lista; Enter abre a nota escolhida.
+
+        As teclas são presas na janela, não na tabela: no Tk quem recebe tecla
+        é quem tem o foco, e o foco quase sempre está na caixa de busca — onde
+        a pessoa acabou de digitar. Presa na janela, a seta funciona de onde
+        se estiver, e `_teclado_livre` garante que ela não roube a seta de
+        quem está no meio de um campo de texto.
+        """
+        janela = self.winfo_toplevel()
+        self._teclas = []
+        for sequencia, acao in (("<Down>", lambda _e: self._andar(1)),
+                                ("<Up>", lambda _e: self._andar(-1)),
+                                ("<Home>", lambda _e: self._ir_para(0)),
+                                ("<End>", lambda _e: self._ir_para(-1)),
+                                ("<Return>", lambda _e: self._abrir_escolhida())):
+            self._teclas.append((sequencia, janela.bind(sequencia, acao, add="+")))
+        self.bind("<Destroy>", self._soltar_teclado, add="+")
+
+    def _soltar_teclado(self, evento=None) -> None:
+        # `<Destroy>` sobe dos filhos também; só interessa o desta tela.
+        if evento is not None and evento.widget is not self:
+            return
+        try:
+            janela = self.winfo_toplevel()
+            for sequencia, identificador in getattr(self, "_teclas", []):
+                janela.unbind(sequencia, identificador)
+        except tk.TclError:
+            pass
+        self._teclas = []
+
+    def _teclado_livre(self) -> bool:
+        """Falso quando o foco está num campo de texto.
+
+        Sem isto, a seta para baixo dentro da caixa de busca deixaria de mover
+        o cursor e passaria a pular de nota — e ninguém entenderia por quê.
+        """
+        try:
+            foco = self.focus_get()
+        except (KeyError, tk.TclError):
+            return False
+        return not isinstance(foco, (tk.Entry, tk.Text, ttk.Entry, ttk.Combobox))
+
+    def _visiveis(self) -> list:
+        return [linha for linha in self.tabela._linhas if linha.winfo_manager()]
+
+    def _andar(self, passo: int) -> None:
+        if not self._teclado_livre():
+            return
+        linhas = self._visiveis()
+        if not linhas:
+            return
+        atuais = [i for i, l in enumerate(linhas) if l.identidade == self.selecionada]
+        if not atuais:
+            self._ir_para(0 if passo > 0 else -1)
+            return
+        destino = max(0, min(len(linhas) - 1, atuais[0] + passo))
+        self._escolher_linha(linhas[destino])
+
+    def _ir_para(self, indice: int) -> None:
+        if not self._teclado_livre():
+            return
+        linhas = self._visiveis()
+        if linhas:
+            self._escolher_linha(linhas[indice])
+
+    def _escolher_linha(self, linha) -> None:
+        self.tabela.marcada = linha.identidade
+        self.tabela.mostrar(self.tabela._dados)
+        self._selecionar(linha.identidade)
+
+    def _abrir_escolhida(self) -> None:
+        if self._teclado_livre() and self.selecionada:
+            self.app.abrir_pdf_direto((self.selecionada,))
 
     def _escolhida(self) -> tuple[str, ...]:
         """A seleção, no formato que os métodos de emissão esperam."""
@@ -3910,6 +3994,33 @@ class ViewDocumentos(tk.Frame):
             return ""
         return f"{bruto[4:]}-{bruto[2:4]}-{bruto[:2]}"
 
+    def _ordenar_por(self, chave: str, crescente: bool) -> None:
+        self.ordem = (chave, crescente)
+        self.atualizar()
+
+    def _chave_de_ordem(self, chave: str):
+        """Como comparar cada coluna — pelo VALOR, não pelo texto da tela.
+
+        Ordenar "R$ 1.250,00" como texto põe mil antes de novecentos, e
+        "29/08/2026" antes de "05/09/2026". O que se compara aqui é o número
+        e a data de verdade, que é o que já está guardado na nota.
+        """
+        ordem_da_situacao = {"failed": 0, "draft": 1, "submitted": 2}
+
+        def tomador(doc):
+            dados = (doc.get("payload") or {}).get("tomador") or {}
+            return str(dados.get("nome") or dados.get("documento") or "").lower()
+
+        chaves = {
+            "prestador": lambda doc: self._prestador(doc).lower(),
+            "tomador": tomador,
+            "valor": self._valor,
+            # Recusada primeiro: é a que precisa de alguém.
+            "status": lambda doc: ordem_da_situacao.get(doc.get("status"), 9),
+            "data": lambda doc: str(doc.get("created_at") or ""),
+        }
+        return chaves.get(chave)
+
     def _pelo_topo(self) -> list[dict[str, Any]]:
         """As notas que passam por empresa, período e busca.
 
@@ -3930,7 +4041,14 @@ class ViewDocumentos(tk.Frame):
             if not ui.combina(self._busca_de[doc["id"]], self.procurado):
                 continue
             escolhidas.append(doc)
-        return escolhidas
+
+        if self.ordem is None:
+            return escolhidas
+        chave, crescente = self.ordem
+        comparar = self._chave_de_ordem(chave)
+        if comparar is None:
+            return escolhidas
+        return sorted(escolhidas, key=comparar, reverse=not crescente)
 
     def _dinheiro(self, soma: Decimal) -> str:
         if self.app._valores_ocultos:

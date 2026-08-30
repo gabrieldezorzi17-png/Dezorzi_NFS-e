@@ -855,6 +855,64 @@ def assinatura(pai: tk.Widget, nome: str, *, fundo: str, cor: str,
     return tela
 
 
+def dica(widget: tk.Widget, texto: str, *, espera: int = 450) -> None:
+    """Diz o que o controle faz, ao pousar o mouse nele.
+
+    Um ícone sem legenda só se explica clicando — e clicar num ícone que não
+    se sabe o que faz é justamente o que ninguém quer fazer num programa de
+    nota fiscal.
+
+    A janelinha nasce sem barra de título e SEM `transient`: no Windows, uma
+    janela que é as duas coisas simplesmente não aparece. Foi o que já deixou
+    os avisos invisíveis aqui, e a lição vale para qualquer flutuante.
+    """
+    estado: dict = {"tarefa": None, "janela": None}
+
+    def esconder(_evento=None) -> None:
+        if estado["tarefa"] is not None:
+            try:
+                widget.after_cancel(estado["tarefa"])
+            except tk.TclError:
+                pass
+            estado["tarefa"] = None
+        janela = estado["janela"]
+        estado["janela"] = None
+        if janela is not None:
+            try:
+                janela.destroy()
+            except tk.TclError:
+                pass
+
+    def mostrar() -> None:
+        estado["tarefa"] = None
+        if not widget.winfo_exists() or estado["janela"] is not None:
+            return
+        try:
+            janela = tk.Toplevel(widget)
+            janela.overrideredirect(True)
+            janela.configure(bg=BORDER_FORTE)
+            tk.Label(janela, text=texto, bg=SURFACE_FUNDA, fg=INK,
+                     font=MICRO, padx=E2, pady=3).pack(padx=1, pady=1)
+            janela.update_idletasks()
+            x = widget.winfo_rootx() + widget.winfo_width() // 2
+            x -= janela.winfo_width() // 2
+            y = widget.winfo_rooty() - janela.winfo_height() - 6
+            janela.geometry(f"+{max(0, x)}+{max(0, y)}")
+            janela.lift()
+        except tk.TclError:
+            return
+        estado["janela"] = janela
+
+    def pousar(_evento=None) -> None:
+        esconder()
+        estado["tarefa"] = widget.after(espera, mostrar)
+
+    widget.bind("<Enter>", pousar, add="+")
+    widget.bind("<Leave>", esconder, add="+")
+    widget.bind("<Button-1>", esconder, add="+")
+    widget.bind("<Destroy>", esconder, add="+")
+
+
 def ponto(pai: tk.Widget, cor: str, *, fundo=None, lado: int = 10) -> tk.Canvas:
     """Bolinha colorida de status — o indicador de transmissão da barra lateral."""
     tela = tk.Canvas(pai, width=lado, height=lado, bg=fundo or SURFACE,
@@ -1332,13 +1390,15 @@ class Celula:
 
     def __init__(self, chave: str, titulo: str, largura: int, *,
                  tipo: str = "texto", peso: int = 0, fim: bool = False,
-                 minimo: int = 0) -> None:
+                 minimo: int = 0, ordenavel: bool = True) -> None:
         self.chave = chave
         self.titulo = titulo
         self.largura = largura
         self.tipo = tipo          # texto | duplo | dinheiro | pilula | marca | acoes
         self.peso = peso          # >0 = divide a sobra, e cede quando falta
         self.fim = fim            # alinhado à direita
+        # A coluna de ícones não ordena nada: não há o que comparar nela.
+        self.ordenavel = ordenavel
         # Piso: em janela estreita a coluna encolhe até aqui e para. Sem ele,
         # apertar a janela espremeria uma coluna até zero.
         self.minimo = minimo or max(40, largura // 2)
@@ -1373,11 +1433,16 @@ class Linha(tk.Frame):
             self.caixas[coluna.chave] = caixa
             self.partes[coluna.chave] = self._montar(caixa, coluna)
 
+        # `add="+"` em todos: sem isso, este laço APAGA o que já foi ligado
+        # nos filhos ao montá-los. Foi o que deixou os dois ícones do fim da
+        # linha decorativos — clicar no de PDF só selecionava a linha, porque
+        # a ação deles tinha sido sobrescrita aqui. E, mais tarde, foi o que
+        # engoliu a dica que aparece ao pousar o mouse.
         for widget in self._tudo():
-            widget.bind("<Button-1>", lambda _e: ao_clicar(self))
-            widget.bind("<Double-1>", lambda _e: ao_abrir(self))
-            widget.bind("<Enter>", self._entrar)
-            widget.bind("<Leave>", self._sair)
+            widget.bind("<Button-1>", lambda _e: ao_clicar(self), add="+")
+            widget.bind("<Double-1>", lambda _e: ao_abrir(self), add="+")
+            widget.bind("<Enter>", self._entrar, add="+")
+            widget.bind("<Leave>", self._sair, add="+")
 
     # -- montagem ------------------------------------------------------- #
 
@@ -1418,7 +1483,8 @@ class Linha(tk.Frame):
             dentro = tk.Frame(caixa, bg=SURFACE)
             dentro.pack(side="right", fill="y")
             botoes = {}
-            for nome, dica in (("pdf", "Abrir em PDF"), ("enviar", "Enviar ao portal")):
+            for nome, dica_do_icone in (("pdf", "Abrir em PDF"),
+                                        ("enviar", "Enviar ao portal")):
                 alvo = tk.Frame(dentro, bg=SURFACE, cursor="hand2", padx=5, pady=5)
                 alvo.pack(side="left", pady=(9, 0))
                 # 18px e um cinza mais claro: com o texto da linha maior, o
@@ -1429,6 +1495,10 @@ class Linha(tk.Frame):
                 for widget in (alvo, desenho):
                     widget.bind("<Button-1>",
                                 lambda _e, n=nome: self._agir(n))
+                    # O ícone come o clique quando age: senão a linha também
+                    # se selecionaria, e um clique faria duas coisas.
+                # A legenda já existia nesta tupla desde o começo, sem uso.
+                dica(alvo, dica_do_icone)
                 botoes[nome] = {"caixa": alvo, "desenho": desenho,
                                 "icone": "notas" if nome == "pdf" else "emitir",
                                 "cor": INK_2, "ligado": True}
@@ -1454,10 +1524,13 @@ class Linha(tk.Frame):
 
         caixa.bind("<Configure>", ao_mudar)
 
-    def _agir(self, nome: str) -> None:
+    def _agir(self, nome: str):
         parte = self.partes.get("acoes")
         if parte and parte["botoes"][nome]["ligado"]:
             self._ao_agir(self, nome)
+            return "break"
+        return None
+
 
     def _tudo(self):
         """Todo widget da linha, para pintar e ouvir cliques de uma vez."""
@@ -1556,13 +1629,17 @@ class Tabela(tk.Frame):
 
     def __init__(self, pai: tk.Widget, colunas: list[Celula], *,
                  ao_selecionar=None, ao_abrir=None, ao_agir=None,
-                 altura_maxima: int = 9) -> None:
+                 ao_ordenar=None, altura_maxima: int = 9) -> None:
         super().__init__(pai, bg=SURFACE)
         self.colunas = colunas
         self.altura_maxima = altura_maxima
         self._ao_selecionar = ao_selecionar or (lambda _i: None)
         self._ao_abrir = ao_abrir or (lambda _i: None)
         self._ao_agir = ao_agir or (lambda _i, _n: None)
+        self._ao_ordenar = ao_ordenar
+        self.ordenado_por: str | None = None
+        self.crescente = True
+        self._titulos: dict[str, tk.Label] = {}
         self.marcada: str | None = None
         self._linhas: list[Linha] = []
         self._dados: list[dict] = []
@@ -1577,9 +1654,13 @@ class Tabela(tk.Frame):
             caixa.pack_propagate(False)
             caixa.pack(side="left", fill="y", padx=(E3, 0))
             self._caixas_cabeca[coluna.chave] = caixa
-            tk.Label(caixa, text=coluna.titulo.upper(), bg=SURFACE_ALT, fg=INK_3,
-                     font=ETIQUETA, anchor="e" if coluna.fim else "w").pack(
-                fill="both", expand=True)
+            titulo = tk.Label(caixa, text=coluna.titulo.upper(), bg=SURFACE_ALT,
+                              fg=INK_3, font=ETIQUETA,
+                              anchor="e" if coluna.fim else "w")
+            titulo.pack(fill="both", expand=True)
+            self._titulos[coluna.chave] = titulo
+            if self._ao_ordenar is not None and coluna.ordenavel and coluna.titulo:
+                self._tornar_ordenavel(caixa, titulo, coluna.chave)
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x")
 
         self.corpo = tk.Frame(self, bg=SURFACE)
@@ -1587,6 +1668,43 @@ class Tabela(tk.Frame):
 
         self._larguras: dict[str, int] = {}
         self.bind("<Configure>", self._repartir)
+
+    # -- ordenação -------------------------------------------------------- #
+
+    def _tornar_ordenavel(self, caixa: tk.Frame, titulo: tk.Label,
+                          chave: str) -> None:
+        for widget in (caixa, titulo):
+            widget.configure(cursor="hand2")
+            widget.bind("<Button-1>", lambda _e, c=chave: self.ordenar_por(c))
+            widget.bind("<Enter>", lambda _e, t=titulo: t.configure(fg=INK))
+            widget.bind("<Leave>", lambda _e, t=titulo, c=chave: t.configure(
+                fg=INK if self.ordenado_por == c else INK_3))
+
+    def ordenar_por(self, chave: str) -> None:
+        """Primeiro clique ordena crescente; o seguinte inverte.
+
+        A seta no cabeçalho diz qual é o sentido — sem ela, "clique de novo
+        para inverter" é regra que só quem escreveu conhece.
+        """
+        if self.ordenado_por == chave:
+            self.crescente = not self.crescente
+        else:
+            self.ordenado_por, self.crescente = chave, True
+        self._marcar_ordenacao()
+        if self._ao_ordenar is not None:
+            self._ao_ordenar(chave, self.crescente)
+
+    def _marcar_ordenacao(self) -> None:
+        for coluna in self.colunas:
+            titulo = self._titulos.get(coluna.chave)
+            if titulo is None:
+                continue
+            nome = coluna.titulo.upper()
+            if coluna.chave == self.ordenado_por:
+                titulo.configure(text=f"{nome} {'▲' if self.crescente else '▼'}",
+                                 fg=INK)
+            else:
+                titulo.configure(text=nome, fg=INK_3)
 
     # -- largura das colunas --------------------------------------------- #
 

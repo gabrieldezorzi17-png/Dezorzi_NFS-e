@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import tkinter as tk
 import copy
 import unittest
@@ -5264,3 +5265,184 @@ class GravacaoTeimosaTests(unittest.TestCase):
         self.assertIn("NFSE_TEMA=escuro",
                       paths.ENV_FILE.read_text(encoding="utf-8"))
         self.assertFalse((self.pasta / ".env.env.tmp").exists())
+
+
+class InteracaoDaTabelaTests(unittest.TestCase):
+    """Ordenar pelo cabeçalho, e o clique que chega onde deveria."""
+
+    COLUNAS = None
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        # Sem `withdraw`: evento de clique não chega a widget não mapeado, e o
+        # teste passaria dizendo que nada aconteceu — que é exatamente o
+        # defeito que ele existe para pegar.
+        # Larga o bastante para as colunas receberem largura: numa janela
+        # apertada a caixa do ícone fica com 1x1 e o clique não chega nela.
+        self.raiz.geometry("700x300")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+        self.pedidos = []
+        self.acoes = []
+        self.tabela = ui.Tabela(
+            self.raiz,
+            [ui.Celula("nome", "Nome", 120, tipo="duplo"),
+             ui.Celula("valor", "Valor", 90, tipo="dinheiro", fim=True),
+             ui.Celula("acoes", "", 60, tipo="acoes", fim=True, ordenavel=False)],
+            # A Tabela já entrega a IDENTIDADE, não a linha.
+            ao_agir=lambda identidade, nome: self.acoes.append((identidade, nome)),
+            ao_ordenar=lambda chave, crescente: self.pedidos.append((chave, crescente)),
+        )
+        self.tabela.pack(fill="both", expand=True)
+        self.tabela.mostrar([
+            {"id": "1", "nome": ("ALFA", "a"), "valor": "10,00",
+             "acoes": {"pdf": True, "enviar": False}},
+            {"id": "2", "nome": ("BETA", "b"), "valor": "20,00",
+             "acoes": {"pdf": True, "enviar": False}},
+        ])
+        for _ in range(20):        # deixa o layout assentar antes de clicar
+            self.raiz.update()
+            time.sleep(0.02)
+
+    def tearDown(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    # -- o defeito antigo ------------------------------------------------- #
+
+    def test_clicar_no_icone_dispara_a_acao_do_icone(self):
+        """Os dois ícones do fim da linha eram decorativos.
+
+        A `Linha` religava `<Button-1>` em todos os filhos sem `add="+"`, o
+        que APAGAVA a ação ligada ao ícone quando ele foi montado. Clicar no
+        ícone de PDF só selecionava a linha. Passou despercebido porque o
+        teste chamava o método direto, sem clicar.
+        """
+        linha = self.tabela._linhas[0]
+        linha.partes["acoes"]["botoes"]["pdf"]["caixa"].event_generate("<Button-1>")
+        self.raiz.update()
+        self.assertEqual(self.acoes, [("1", "pdf")])
+
+    def test_o_icone_desligado_nao_dispara(self):
+        linha = self.tabela._linhas[0]
+        linha.partes["acoes"]["botoes"]["enviar"]["caixa"].event_generate("<Button-1>")
+        self.raiz.update()
+        self.assertEqual(self.acoes, [])
+
+    def test_clicar_na_linha_continua_selecionando(self):
+        # A correção não podia quebrar o clique comum: `add="+"` mantém os
+        # dois, e o do ícone come o evento só quando de fato age.
+        marcadas = []
+        self.tabela._ao_selecionar = marcadas.append
+        self.tabela._linhas[1].partes["nome"]["cima"].event_generate("<Button-1>")
+        self.raiz.update()
+        self.assertEqual(marcadas, ["2"])
+
+    # -- ordenação -------------------------------------------------------- #
+
+    def test_o_cabecalho_pede_a_ordem(self):
+        self.tabela.ordenar_por("nome")
+        self.assertEqual(self.pedidos, [("nome", True)])
+
+    def test_clicar_de_novo_inverte(self):
+        self.tabela.ordenar_por("nome")
+        self.tabela.ordenar_por("nome")
+        self.assertEqual(self.pedidos, [("nome", True), ("nome", False)])
+
+    def test_trocar_de_coluna_recomeca_crescente(self):
+        self.tabela.ordenar_por("nome")
+        self.tabela.ordenar_por("nome")
+        self.tabela.ordenar_por("valor")
+        self.assertEqual(self.pedidos[-1], ("valor", True))
+
+    def test_a_seta_diz_o_sentido(self):
+        self.tabela.ordenar_por("nome")
+        self.assertTrue(self.tabela._titulos["nome"].cget("text").endswith("▲"))
+        self.tabela.ordenar_por("nome")
+        self.assertTrue(self.tabela._titulos["nome"].cget("text").endswith("▼"))
+
+    def test_so_a_coluna_ativa_tem_seta(self):
+        self.tabela.ordenar_por("nome")
+        self.tabela.ordenar_por("valor")
+        self.assertEqual(self.tabela._titulos["nome"].cget("text"), "NOME")
+        self.assertIn("▲", self.tabela._titulos["valor"].cget("text"))
+
+    def test_a_coluna_de_icones_nao_ordena(self):
+        # Não há o que comparar numa coluna de botões.
+        caixa = self.tabela._caixas_cabeca["acoes"]
+        self.assertNotEqual(str(caixa.cget("cursor")), "hand2")
+        caixa.event_generate("<Button-1>")
+        self.raiz.update()
+        self.assertEqual(self.pedidos, [])
+
+
+class DicaFlutuanteTests(unittest.TestCase):
+    """A legenda que aparece ao pousar o mouse."""
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+            self.raiz.withdraw()
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+        self.raiz.deiconify()
+        self.alvo = tk.Frame(self.raiz, width=40, height=20, bg=ui.SURFACE)
+        self.alvo.pack()
+        self.raiz.update()
+
+    def tearDown(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    def _flutuantes(self):
+        return [w for w in self.alvo.winfo_children()
+                if isinstance(w, tk.Toplevel)]
+
+    def _esperar(self, quer: bool, limite: float = 2.0):
+        fim = time.time() + limite
+        while time.time() < fim:
+            self.raiz.update()
+            if bool(self._flutuantes()) == quer:
+                return True
+            time.sleep(0.03)
+        return bool(self._flutuantes()) == quer
+
+    def test_aparece_ao_pousar_e_some_ao_sair(self):
+        ui.dica(self.alvo, "Abrir em PDF", espera=50)
+        self.alvo.event_generate("<Enter>")
+        self.assertTrue(self._esperar(True), "a dica não apareceu")
+        textos = [f.cget("text") for w in self._flutuantes()
+                  for f in w.winfo_children() if isinstance(f, tk.Label)]
+        self.assertIn("Abrir em PDF", textos)
+        self.alvo.event_generate("<Leave>")
+        self.assertTrue(self._esperar(False), "a dica não sumiu")
+
+    def test_nao_aparece_se_o_mouse_so_passou(self):
+        """Entrar e sair antes do tempo não deixa a legenda pipocar."""
+        ui.dica(self.alvo, "Abrir em PDF", espera=600)
+        self.alvo.event_generate("<Enter>")
+        self.raiz.update()
+        self.alvo.event_generate("<Leave>")
+        fim = time.time() + 1.0
+        while time.time() < fim:
+            self.raiz.update()
+            time.sleep(0.03)
+        self.assertEqual(self._flutuantes(), [])
+
+    def test_clicar_fecha_a_dica(self):
+        ui.dica(self.alvo, "Abrir em PDF", espera=50)
+        self.alvo.event_generate("<Enter>")
+        self.assertTrue(self._esperar(True))
+        self.alvo.event_generate("<Button-1>")
+        self.assertTrue(self._esperar(False), "a dica ficou por cima do clique")
