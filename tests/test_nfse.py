@@ -4647,11 +4647,23 @@ class EmpacotamentoTests(unittest.TestCase):
             self.assertNotIn("NFSE_SENHA=segredo", env)
             self.assertIn("NFSE_LIVE_MODE=true", env)
 
-    def test_o_env_daqui_tem_a_chave_de_atualizacao(self):
-        """Sem a chave no .env, a semente sai sem ela e a cópia nunca procura."""
-        env = (pathlib.Path(paths.__file__).resolve().parent / ".env")
+    def test_a_chave_de_atualizacao_esta_na_origem_do_env(self):
+        """Sem a chave, a semente sai sem ela e a cópia nunca procura versão.
+
+        Confere a MESMA origem que `preparar_semente` usa: o `.env` quando
+        existe, e o `.env.example` quando não — que é o caso de um clone, onde
+        o `.env` nem é versionado. Antes isto olhava só o `.env`, e a
+        compilação na nuvem quebrava por falta de um arquivo que ela nunca
+        vai ter.
+        """
+        raiz = pathlib.Path(paths.__file__).resolve().parent
+        origem = raiz / ".env"
+        if not origem.exists():
+            origem = raiz / ".env.example"
+        self.assertTrue(origem.exists(), "nem .env nem .env.example")
         self.assertIn("NFSE_ATUALIZACAO_URL",
-                      env.read_text(encoding="utf-8"))
+                      origem.read_text(encoding="utf-8"),
+                      f"a chave falta em {origem.name}")
 
 
 class IconeDoExecutavelTests(unittest.TestCase):
