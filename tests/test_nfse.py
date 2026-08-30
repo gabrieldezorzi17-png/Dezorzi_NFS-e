@@ -5446,3 +5446,78 @@ class DicaFlutuanteTests(unittest.TestCase):
         self.assertTrue(self._esperar(True))
         self.alvo.event_generate("<Button-1>")
         self.assertTrue(self._esperar(False), "a dica ficou por cima do clique")
+
+
+class CursorHonestoTests(unittest.TestCase):
+    """A mãozinha é promessa: onde ela aparece, o clique tem de responder.
+
+    Um widget com cursor de mão e sem tratador é um botão que não é botão —
+    foi o caso dos ícones de cada linha e dos contadores do Painel. A
+    varredura da tela inteira achou os dois; estes testes seguram o
+    componente onde eles nasciam.
+    """
+
+    def setUp(self):
+        try:
+            self.raiz = tk.Tk()
+            self.raiz.geometry("500x260")
+        except Exception as exc:
+            self.skipTest(f"sem interface gráfica: {exc}")
+        ui.escolher_familia(self.raiz)
+        ui.usar_tema("escuro")
+
+    def tearDown(self):
+        try:
+            self.raiz.destroy()
+        except Exception:
+            pass
+        ui.usar_tema("claro")
+
+    def test_cartao_sem_acao_nao_promete_clique(self):
+        """No Painel estes cartões não filtravam nada e mostravam a mão."""
+        cartao = ui.CartaoFiltro(self.raiz, "Faturado", tom="info")
+        cartao.pack()
+        self.raiz.update()
+        self.assertNotEqual(str(cartao.cget("cursor")), "hand2")
+
+    def test_cartao_com_acao_promete_no_cartao_inteiro(self):
+        cliques = []
+        cartao = ui.CartaoFiltro(self.raiz, "Emitidas", tom="sucesso",
+                                 ao_clicar=lambda: cliques.append(1))
+        cartao.atualizar("4", "no portal", ativo=False)
+        cartao.pack()
+        self.raiz.update()
+        # Nos rótulos também: eles cobrem quase toda a área do cartão.
+        for parte in (cartao, cartao.titulo, cartao.numero, cartao.detalhe):
+            self.assertEqual(str(parte.cget("cursor")), "hand2",
+                             f"{parte} sem a mãozinha")
+        cartao.numero.event_generate("<Button-1>")
+        self.raiz.update()
+        self.assertEqual(cliques, [1])
+
+    def test_a_linha_da_tabela_promete_no_corpo_inteiro(self):
+        tabela = ui.Tabela(self.raiz,
+                           [ui.Celula("nome", "Nome", 200, tipo="duplo")],
+                           ao_selecionar=lambda _i: None)
+        tabela.pack(fill="both", expand=True)
+        tabela.mostrar([{"id": "1", "nome": ("ALFA", "a")}])
+        for _ in range(15):
+            self.raiz.update()
+            time.sleep(0.02)
+        linha = tabela._linhas[0]
+        for parte in (linha, linha.partes["nome"]["cima"],
+                      linha.partes["nome"]["baixo"]):
+            self.assertEqual(str(parte.cget("cursor")), "hand2",
+                             f"{parte} sem a mãozinha")
+
+    def test_a_dica_do_campo_usa_cursor_de_texto(self):
+        # Ela fica por cima de um campo em que se digita.
+        campo = tk.Entry(self.raiz)
+        campo.pack()
+        ui.dica_no_campo(campo, "dd/mm/aaaa")
+        for _ in range(10):
+            self.raiz.update()
+            time.sleep(0.02)
+        rotulos = [w for w in campo.winfo_children() if isinstance(w, tk.Label)]
+        self.assertTrue(rotulos, "a dica não foi criada")
+        self.assertEqual(str(rotulos[0].cget("cursor")), "xterm")

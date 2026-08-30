@@ -70,7 +70,7 @@ import registro
 # A versão desta compilação. `empacotar.py` a lê para nomear o que publica, e
 # a tela de Ajustes a mostra — quem dá suporte precisa saber o que está rodando
 # sem pedir para o usuário abrir arquivo nenhum.
-VERSAO_ATUAL = "1.0.7"
+VERSAO_ATUAL = "1.0.8"
 
 VARIAVEL_URL = "NFSE_ATUALIZACAO_URL"
 ESPERA_REDE = 12          # segundos; a abertura não pode depender da internet

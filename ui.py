@@ -728,7 +728,10 @@ def dica_no_campo(campo: tk.Entry, texto: str, *, fundo: str | None = None) -> N
     rótulo, ela não existe para o resto do programa.
     """
     fundo = fundo or SURFACE
-    aviso = tk.Label(campo, text=texto, bg=fundo, fg=INK_3, font=PEQUENO)
+    # Cursor de texto, e não de mão: a dica fica por cima de um campo em que
+    # se digita, e a mãozinha ali prometeria um botão que não existe.
+    aviso = tk.Label(campo, text=texto, bg=fundo, fg=INK_3, font=PEQUENO,
+                     cursor="xterm")
 
     def rever(_evento=None) -> None:
         if not campo.winfo_exists():
@@ -1330,8 +1333,13 @@ class CartaoFiltro(Redondo):
                  ao_clicar: Callable[[], None] | None = None) -> None:
         self.cor = globals().get(TONS_DE_FILTRO.get(tom, "PRIMARIA"), PRIMARIA)
         self.ativo = False
+        # A mãozinha só aparece quando há mesmo o que clicar. Antes ela era
+        # fixa, e no Painel — onde estes cartões não tinham função — ela
+        # prometia uma resposta que não vinha. Cursor é promessa; promessa
+        # sem cumprimento é o mesmo que botão que não é botão.
         super().__init__(pai, raio=12, fundo=SURFACE, borda=BORDER,
-                         padx=E4, pady=E3, cursor="hand2")
+                         padx=E4, pady=E3,
+                         cursor="hand2" if ao_clicar is not None else "")
         self.titulo = tk.Label(self.interior, text=titulo.upper(), font=ETIQUETA,
                                bg=SURFACE, fg=INK_3, anchor="w")
         self.numero = tk.Label(self.interior, text="0", font=NUMERO, bg=SURFACE,
@@ -1344,6 +1352,11 @@ class CartaoFiltro(Redondo):
 
         if ao_clicar is not None:
             for widget in (self, self.interior, self.titulo, self.numero, self.detalhe):
+                # A mãozinha vai em TODOS, não só no cartão: os rótulos cobrem
+                # quase toda a área dele, e sem isto o cursor trocava conforme
+                # o mouse passasse por cima de uma letra ou do vão ao lado —
+                # o cartão parecia clicável só em pedaços.
+                widget.configure(cursor="hand2")
                 widget.bind("<Enter>", self._entrar)
                 widget.bind("<Leave>", self._sair)
                 widget.bind("<Button-1>", lambda _e: ao_clicar())
@@ -1439,6 +1452,13 @@ class Linha(tk.Frame):
         # a ação deles tinha sido sobrescrita aqui. E, mais tarde, foi o que
         # engoliu a dica que aparece ao pousar o mouse.
         for widget in self._tudo():
+            # A linha inteira responde ao clique, então a linha inteira mostra
+            # a mãozinha — inclusive as células. Só no Frame de fora, o cursor
+            # mudava nos vãos e voltava ao normal em cima do texto.
+            try:
+                widget.configure(cursor="hand2")
+            except tk.TclError:
+                pass
             widget.bind("<Button-1>", lambda _e: ao_clicar(self), add="+")
             widget.bind("<Double-1>", lambda _e: ao_abrir(self), add="+")
             widget.bind("<Enter>", self._entrar, add="+")

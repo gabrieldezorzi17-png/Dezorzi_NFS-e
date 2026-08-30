@@ -963,14 +963,18 @@ class NfseDesktop(tk.Tk):
         medidores.pack(fill="x", pady=(0, ui.E3))
         # (o laço abaixo escreve nesta faixa)
         indicadores = (
-            ("Emitidas", len(emitidas), "no portal", "sucesso"),
-            ("Rascunhos", sum(1 for d in docs if d.get("status") == "draft"),
+            ("submitted", "Emitidas", len(emitidas), "no portal", "sucesso"),
+            ("draft", "Rascunhos", sum(1 for d in docs if d.get("status") == "draft"),
              "aguardando revisão", "neutro"),
-            ("Recusadas", sum(1 for d in docs if d.get("status") == "failed"),
+            ("failed", "Recusadas", sum(1 for d in docs if d.get("status") == "failed"),
              "precisam de atenção", "erro"),
         )
-        for indice, (titulo, quantos, detalhe, tom) in enumerate(indicadores):
-            cartao = ui.CartaoFiltro(medidores, titulo, tom=tom)
+        for indice, (chave, titulo, quantos, detalhe, tom) in enumerate(indicadores):
+            # Clicar num contador leva à lista já filtrada por ele: é o que
+            # a pessoa quer depois de ver "3 recusadas" — ver quais são.
+            cartao = ui.CartaoFiltro(
+                medidores, titulo, tom=tom,
+                ao_clicar=lambda c=chave: self.show_documents(c))
             cartao.atualizar(str(quantos), detalhe, ativo=False)
             cartao.pack(side="left", expand=True, fill="both",
                         padx=(0 if indice == 0 else ui.E2, 0))
@@ -1127,6 +1131,7 @@ class NfseDesktop(tk.Tk):
 
         filhos = (linha, alto, numero, valor, baixo, pe)
         for widget in filhos:
+            widget.configure(cursor="hand2")
             widget.bind("<Button-1>", lambda _e, d=doc: self.janela_impressao(
                 d.get("nota") or {}, d))
             widget.bind("<Enter>", lambda _e, ws=filhos: [
@@ -2529,12 +2534,14 @@ class NfseDesktop(tk.Tk):
             for doc in docs
         ])
 
-    def show_documents(self) -> None:
+    def show_documents(self, situacao: str = "") -> None:
+        """A lista de notas. `situacao` abre já filtrada por ela."""
         self._clear()
         self._mostrar_comando(True)
         self._marcar_nav("notas")
         self._title("Notas fiscais de serviço", "Rascunhos, emissões e recusas.")
-        ViewDocumentos(self.content, self).pack(fill="both", expand=True)
+        ViewDocumentos(self.content, self, situacao=situacao).pack(
+            fill="both", expand=True)
 
     # ------------------------------------------------------------------ #
     # Exclusão
@@ -3376,6 +3383,9 @@ class NfseDesktop(tk.Tk):
             explica.pack(fill="x")
             alvos = (linha, nome_widget, explica)
             for widget in alvos:
+                # A mãozinha nos rótulos também: eles cobrem quase toda a
+                # linha, e sem isto o cursor mudava só nas beiradas.
+                widget.configure(cursor="hand2")
                 widget.bind("<Button-1>", lambda _e, c=comando: c())
                 widget.bind("<Enter>", lambda _e, a=alvos: [
                     w.configure(bg=ui.SURFACE_ALT) for w in a])
@@ -3557,11 +3567,12 @@ class ViewDocumentos(tk.Frame):
     )
     ESPERA_DATA = 300      # o mesmo respiro da caixa de busca
 
-    def __init__(self, pai: tk.Widget, app: "NfseDesktop") -> None:
+    def __init__(self, pai: tk.Widget, app: "NfseDesktop",
+                 *, situacao: str = "") -> None:
         super().__init__(pai, bg=ui.BG)
         self.app = app
         self.docs = storage.list_all()
-        self.situacao = ""            # "" = todas
+        self.situacao = situacao      # "" = todas
         self.procurado = ""
         # `None` = a ordem natural: a mais recente primeiro. É o que faz
         # sentido ao abrir, porque a nota que se procura costuma ser a última.
