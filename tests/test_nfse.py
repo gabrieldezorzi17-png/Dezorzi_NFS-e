@@ -4486,15 +4486,20 @@ class AtualizacaoTests(unittest.TestCase):
         self.assertIn("start ", texto)
         self.assertIn('del "%~f0"', texto)
 
-    def test_o_roteiro_poe_aspas_nos_caminhos_com_espaco(self):
-        # "Dezorzi NFS-e.exe" tem espaço no nome: sem aspas, o `move` recebe
-        # dois argumentos e a troca não acontece.
+    def test_a_variavel_do_caminho_vai_entre_aspas(self):
+        """"Dezorzi NFS-e.exe" tem espaço: sem aspas, o `move` recebe dois
+        argumentos e a troca não acontece.
+
+        As aspas agora envolvem a VARIÁVEL, não o caminho — ele deixou de ser
+        escrito no arquivo para não passar pela página de código do `cmd`.
+        """
         with tempfile.TemporaryDirectory() as pasta:
             base = pathlib.Path(pasta)
-            alvo = base / "Dezorzi NFS-e.exe"
-            roteiro = updater._roteiro(base / "update_temp.exe", alvo, base)
-            texto = roteiro.read_text(encoding="utf-8")
-        self.assertIn('"' + str(alvo) + '"', texto)
+            texto = updater._roteiro(base / "update_temp.exe",
+                                     base / "Dezorzi NFS-e.exe",
+                                     base).read_text(encoding="ascii")
+        self.assertIn('"%NFSE_NOVO%" "%NFSE_ALVO%"', texto)
+        self.assertIn('start "" "%NFSE_ALVO%"', texto)
 
     def test_o_roteiro_insiste_antes_de_desistir(self):
         # OneDrive e antivírus seguram o arquivo por um instante depois de o
@@ -4506,6 +4511,45 @@ class AtualizacaoTests(unittest.TestCase):
                                      base).read_text(encoding="utf-8")
         self.assertIn("goto tentar", texto)
         self.assertIn("geq 15", texto)
+
+    def test_o_roteiro_e_ascii_puro(self):
+        """Nenhum byte acentuado no `.bat` — nem no caminho, nem em texto.
+
+        O `cmd` lê um `.bat` na página de código antiga do Windows (850, no
+        Brasil), não em UTF-8. Caminho com acento gravado em UTF-8 chegava
+        corrompido: "Área de Trabalho" virava "├ürea de Trabalho", o `move`
+        falhava calado e o `start` reclamava de um caminho inexistente. E
+        "Área de Trabalho" é o nome PADRÃO da Área de Trabalho no Windows em
+        português — o recurso quebrava para quase todo mundo.
+        """
+        with tempfile.TemporaryDirectory() as pasta:
+            base = pathlib.Path(pasta)
+            acentuado = base / "Área de Trabalho" / "Dezorzi NFS-e.exe"
+            bruto = updater._roteiro(base / "novo.exe", acentuado,
+                                     base).read_bytes()
+        fora = [b for b in bruto if b > 127]
+        self.assertEqual(fora, [], "há byte não-ASCII no roteiro")
+
+    def test_os_caminhos_vao_por_variavel_de_ambiente(self):
+        """Variável de ambiente não passa por página de código: vem em Unicode."""
+        with tempfile.TemporaryDirectory() as pasta:
+            base = pathlib.Path(pasta)
+            novo, alvo = base / "novo.exe", base / "Área" / "app.exe"
+            texto = updater._roteiro(novo, alvo, base).read_text(encoding="ascii")
+            ambiente = updater.ambiente_do_roteiro(novo, alvo)
+        self.assertIn("%NFSE_NOVO%", texto)
+        self.assertIn("%NFSE_ALVO%", texto)
+        self.assertNotIn(str(base), texto, "o caminho vazou para dentro do .bat")
+        self.assertEqual(ambiente["NFSE_NOVO"], str(novo))
+        self.assertEqual(ambiente["NFSE_ALVO"], str(alvo))
+
+    def test_o_ambiente_preserva_o_resto(self):
+        # O roteiro herda o ambiente todo; só acrescenta os dois caminhos.
+        with tempfile.TemporaryDirectory() as pasta:
+            base = pathlib.Path(pasta)
+            ambiente = updater.ambiente_do_roteiro(base / "a", base / "b")
+        for chave in list(os.environ)[:5]:
+            self.assertIn(chave, ambiente)
 
     def test_a_espera_nao_usa_timeout(self):
         """`timeout` precisa de console, e o roteiro roda sem nenhum.

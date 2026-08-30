@@ -66,7 +66,7 @@ import registro
 # A versão desta compilação. `empacotar.py` a lê para nomear o que publica, e
 # a tela de Ajustes a mostra — quem dá suporte precisa saber o que está rodando
 # sem pedir para o usuário abrir arquivo nenhum.
-VERSAO_ATUAL = "1.0.3"
+VERSAO_ATUAL = "1.0.4"
 
 VARIAVEL_URL = "NFSE_ATUALIZACAO_URL"
 ESPERA_REDE = 12          # segundos; a abertura não pode depender da internet
@@ -286,36 +286,53 @@ def _roteiro(novo: Path, alvo: Path, pasta: Path) -> Path:
     não pode deixar o usuário sem programa nenhum.
     """
     roteiro = pasta / "update.bat"
-    # A espera é feita com `ping`, e não com `timeout`. O `timeout` do Windows
-    # precisa de um console para poder ser interrompido com uma tecla, e sai
-    # com erro na hora quando não há um — que é exatamente o caso aqui: o
-    # roteiro é disparado com CREATE_NO_WINDOW, sem console nenhum. Com ele,
-    # as quinze tentativas queimavam em milissegundos em vez de durarem quinze
-    # segundos, e qualquer arquivo momentaneamente preso — o caso normal em
-    # máquina com OneDrive — perdia a atualização. `ping -n N 127.0.0.1` espera
-    # N-1 segundos e não depende de console.
+    # NENHUM caminho é escrito dentro do arquivo — eles viajam por variável de
+    # ambiente, e o roteiro sai em ASCII puro.
     #
-    # O laço também não usa bloco entre parênteses: dentro dele o cmd expande
-    # %TENTATIVA% na hora de ler o bloco, não na de executá-lo.
-    espera = "ping -n 2 127.0.0.1 > nul"
+    # O motivo é o pior tipo de defeito: o silencioso. O `cmd` lê um `.bat` na
+    # página de código antiga do Windows (850, no Brasil), não em UTF-8. Um
+    # caminho com acento gravado em UTF-8 chegava corrompido — "Área de
+    # Trabalho" virava "├ürea de Trabalho" —, o `move` falhava calado e o
+    # `start` reclamava de um caminho que ninguém reconhecia. E "Área de
+    # Trabalho" é o nome PADRÃO da Área de Trabalho no Windows em português:
+    # o recurso quebrava para quase todo mundo.
+    #
+    # Variável de ambiente não passa por página de código: o Windows a entrega
+    # em Unicode. Gravar em ASCII garante que isso não se perca de novo — um
+    # caminho escrito no arquivo por engano vira erro aqui, não uma
+    # atualização que some.
+    #
+    # A espera usa `ping` e não `timeout`: `timeout` exige um console para
+    # poder ser interrompido por tecla, e o roteiro roda sem console nenhum —
+    # com ele, as quinze tentativas queimavam em milissegundos.
+    #
+    # O laço não usa bloco entre parênteses: dentro dele o cmd expande
+    # %TENTATIVA% ao ler o bloco, não ao executá-lo.
     roteiro.write_text(
         "@echo off\r\n"
-        "chcp 65001 > nul\r\n"
         "ping -n 3 127.0.0.1 > nul\r\n"      # ~2s: o programa precisa fechar
         "set TENTATIVA=0\r\n"
         ":tentar\r\n"
-        f'move /y "{novo}" "{alvo}" > nul 2>&1\r\n'
+        'move /y "%NFSE_NOVO%" "%NFSE_ALVO%" > nul 2>&1\r\n'
         "if not errorlevel 1 goto abrir\r\n"
         "set /a TENTATIVA+=1\r\n"
         "if %TENTATIVA% geq 15 goto abrir\r\n"
-        f"{espera}\r\n"
+        "ping -n 2 127.0.0.1 > nul\r\n"
         "goto tentar\r\n"
         ":abrir\r\n"
-        f'start "" "{alvo}"\r\n'
+        'start "" "%NFSE_ALVO%"\r\n'
         'del "%~f0"\r\n',
-        encoding="utf-8",
+        encoding="ascii",
     )
     return roteiro
+
+
+def ambiente_do_roteiro(novo: Path, alvo: Path) -> dict[str, str]:
+    """O ambiente com que o roteiro é chamado: é por aqui que os caminhos vão."""
+    ambiente = dict(os.environ)
+    ambiente["NFSE_NOVO"] = str(novo)
+    ambiente["NFSE_ALVO"] = str(alvo)
+    return ambiente
 
 
 def aplicar_atualizacao(baixado: Path, alvo: Path | None = None) -> Path:
@@ -331,6 +348,7 @@ def aplicar_atualizacao(baixado: Path, alvo: Path | None = None) -> Path:
         criacao = getattr(subprocess, "DETACHED_PROCESS", 0) | \
             getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(["cmd", "/c", str(roteiro)], cwd=str(roteiro.parent),
+                     env=ambiente_do_roteiro(Path(baixado), destino),
                      creationflags=criacao, close_fds=True)
     registro.escrever("atualizacao disparada", f"{baixado} -> {destino}")
     return roteiro
