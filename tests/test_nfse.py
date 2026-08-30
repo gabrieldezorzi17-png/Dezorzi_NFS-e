@@ -2795,7 +2795,7 @@ class MarcaNaTelaTests(unittest.TestCase):
     def test_um_logo_png_na_pasta_substitui_o_desenho(self):
         original = marca.ARQUIVO
         try:
-            pasta = pathlib.Path(tempfile.mkdtemp())
+            pasta = pathlib.Path(tempfile.mkdtemp()).resolve()
             marca.ARQUIVO = pasta / "logo.png"
             marca.ARQUIVO.write_bytes(marca.png(48))
             self.assertEqual(marca.imagem(48, self.raiz).height(), 48)
@@ -2833,7 +2833,8 @@ class CaminhosEmpacotadoTests(unittest.TestCase):
 
     def test_empacotado_usa_a_pasta_do_executavel(self):
         sys.frozen = True
-        sys.executable = str(pathlib.Path(tempfile.mkdtemp()) / "Dezorzi NFS-e.exe")
+        sys.executable = str(
+            pathlib.Path(tempfile.mkdtemp()).resolve() / "Dezorzi NFS-e.exe")
         self.assertEqual(paths._raiz(), pathlib.Path(sys.executable).resolve().parent)
 
     def test_empacotado_poe_env_config_e_notas_ao_lado_do_exe(self):
@@ -2844,7 +2845,12 @@ class CaminhosEmpacotadoTests(unittest.TestCase):
 
         guardado = (paths.BASE_DIR, paths.HOME_DIR, paths.ENV_FILE,
                     paths.DATA_DIR, paths.CONFIG_DIR, paths.REQUEST_TEMPLATE)
-        pasta = pathlib.Path(tempfile.mkdtemp())
+        # `.resolve()` na pasta de teste, e não só no que o programa deriva:
+        # em conta cujo nome passa de oito letras, o Windows devolve o caminho
+        # curto — "RUNNER~1" no lugar de "runneradmin" — e a mesma pasta vira
+        # dois textos diferentes. Aqui nunca aparecia porque "dezor" é curto;
+        # apareceu na primeira compilação na nuvem.
+        pasta = pathlib.Path(tempfile.mkdtemp()).resolve()
         sys.frozen = True
         sys.executable = str(pasta / "Dezorzi NFS-e.exe")
         try:
@@ -2867,8 +2873,10 @@ class CaminhosEmpacotadoTests(unittest.TestCase):
 
         guardado = (paths.BASE_DIR, paths.HOME_DIR, paths.ENV_FILE,
                     paths.DATA_DIR, paths.CONFIG_DIR, paths.REQUEST_TEMPLATE)
-        programa = pathlib.Path(tempfile.mkdtemp())
-        notas = pathlib.Path(tempfile.mkdtemp())
+        # Resolvidos pelo mesmo motivo do teste acima: caminho curto do
+        # Windows em conta de nome longo.
+        programa = pathlib.Path(tempfile.mkdtemp()).resolve()
+        notas = pathlib.Path(tempfile.mkdtemp()).resolve()
         sys.frozen = True
         sys.executable = str(programa / "Dezorzi NFS-e.exe")
         os.environ["NFSE_HOME"] = str(notas)
@@ -2891,7 +2899,7 @@ class ModoDeTransmissaoTests(unittest.TestCase):
     def setUp(self):
         self.env_original = paths.ENV_FILE
         self.valor_original = os.environ.get("NFSE_LIVE_MODE")
-        self.pasta = pathlib.Path(tempfile.mkdtemp())
+        self.pasta = pathlib.Path(tempfile.mkdtemp()).resolve()
         paths.ENV_FILE = self.pasta / ".env"
 
     def tearDown(self):
@@ -2949,7 +2957,7 @@ class LeituraDoEnvTests(unittest.TestCase):
 
     def setUp(self):
         self.env_original = paths.ENV_FILE
-        self.pasta = pathlib.Path(tempfile.mkdtemp())
+        self.pasta = pathlib.Path(tempfile.mkdtemp()).resolve()
         paths.ENV_FILE = self.pasta / ".env"
         self.guardadas = {}
 
@@ -3012,8 +3020,8 @@ class InstalacaoTests(unittest.TestCase):
     def setUp(self):
         self.guardado = (paths.BASE_DIR, paths.EMBUTIDOS, paths.CONFIG_DIR,
                          paths.DATA_DIR, paths.ENV_FILE)
-        self.programa = pathlib.Path(tempfile.mkdtemp())
-        self.pacote = pathlib.Path(tempfile.mkdtemp())
+        self.programa = pathlib.Path(tempfile.mkdtemp()).resolve()
+        self.pacote = pathlib.Path(tempfile.mkdtemp()).resolve()
         paths.BASE_DIR = self.programa
         paths.EMBUTIDOS = self.pacote
         paths.CONFIG_DIR = self.programa / "config"
@@ -3070,7 +3078,7 @@ class RegistroTests(unittest.TestCase):
 
     def setUp(self):
         self.guardado = paths.DATA_DIR
-        paths.DATA_DIR = pathlib.Path(tempfile.mkdtemp()) / "data"
+        paths.DATA_DIR = pathlib.Path(tempfile.mkdtemp()).resolve() / "data"
 
     def tearDown(self):
         paths.DATA_DIR = self.guardado
@@ -3291,7 +3299,7 @@ class VersaoDoPortalTests(unittest.TestCase):
 
     def setUp(self):
         self.guardado = (portal.ARQUIVO, os.environ.get(portal.VARIAVEL))
-        portal.ARQUIVO = pathlib.Path(tempfile.mkdtemp()) / "portal_versao.json"
+        portal.ARQUIVO = pathlib.Path(tempfile.mkdtemp()).resolve() / "portal_versao.json"
 
     def tearDown(self):
         portal.ARQUIVO = self.guardado[0]
@@ -3356,7 +3364,7 @@ class AssinaturaDoServicoTests(unittest.TestCase):
         self.guardado = (portal.ARQUIVO,
                          os.environ.get(portal.VARIAVEL),
                          os.environ.get(portal.VARIAVEL_POLITICA))
-        portal.ARQUIVO = pathlib.Path(tempfile.mkdtemp()) / "portal_versao.json"
+        portal.ARQUIVO = pathlib.Path(tempfile.mkdtemp()).resolve() / "portal_versao.json"
 
     def tearDown(self):
         portal.ARQUIVO = self.guardado[0]
