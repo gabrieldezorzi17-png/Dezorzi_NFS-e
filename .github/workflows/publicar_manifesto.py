@@ -51,10 +51,18 @@ def main() -> int:
 
     manifesto = SAIDA / "version.json"
     dados = json.loads(manifesto.read_text(encoding="utf-8"))
-    # O nome vai codificado: "Dezorzi NFS-e.exe" tem espaço, e espaço em URL
-    # quebra o download exatamente na hora em que ninguém está olhando.
+    # O GitHub renomeia o anexo trocando espaço por ponto: "Dezorzi NFS-e.exe"
+    # vira "Dezorzi.NFS-e.exe". Escrever aqui o nome original, ainda que
+    # codificado, dá um endereço que responde 404.
+    #
+    # Hoje isto não quebra nada — pelo caminho da API de Releases o programa
+    # pega o endereço do próprio anexo e ignora este campo. Mas ele é o que
+    # vale se um dia o NFSE_ATUALIZACAO_URL apontar direto para o version.json,
+    # e um endereço errado guardado num arquivo é uma armadilha que espera.
+    nome_publicado = exe.name.replace(" ", ".")
     dados["arquivo"] = (f"https://github.com/{repositorio}/releases/download/"
-                        f"{urllib.parse.quote(tag)}/{urllib.parse.quote(exe.name)}")
+                        f"{urllib.parse.quote(tag)}/"
+                        f"{urllib.parse.quote(nome_publicado)}")
     dados.pop("_como_usar", None)
 
     calculada = impressao_digital(exe)

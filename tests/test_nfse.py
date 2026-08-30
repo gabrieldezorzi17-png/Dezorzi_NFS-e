@@ -4793,11 +4793,16 @@ class PublicacaoNaNuvemTests(unittest.TestCase):
         self.assertEqual(
             dados["arquivo"],
             "https://github.com/dezorzi/nfse/releases/download/v1.2.3/"
-            "Dezorzi%20NFS-e.exe")
+            "Dezorzi.NFS-e.exe")
         self.assertNotIn("_como_usar", dados)
 
-    def test_o_espaco_do_nome_vai_codificado(self):
-        """"Dezorzi NFS-e.exe" tem espaço; espaço cru na URL quebra o download."""
+    def test_o_espaco_do_nome_vira_ponto_como_o_github_faz(self):
+        """O GitHub renomeia o anexo: "Dezorzi NFS-e.exe" vira "Dezorzi.NFS-e.exe".
+
+        Escrever o nome original no manifesto dá um endereço que responde 404.
+        Visto na primeira publicação de verdade, comparando o que o workflow
+        gravou com o que a Release realmente serviu.
+        """
         with tempfile.TemporaryDirectory() as pasta:
             saida = self._cenario(pasta)
             script = self.fluxo / "publicar_manifesto.py"
@@ -4811,7 +4816,9 @@ class PublicacaoNaNuvemTests(unittest.TestCase):
                 env={**os.environ, "REPOSITORIO": "d/n", "TAG": "v1.2.3"})
             dados = json.loads((saida / "version.json").read_text(encoding="utf-8"))
         self.assertNotIn(" ", dados["arquivo"])
-        self.assertIn("%20", dados["arquivo"])
+        self.assertNotIn("%20", dados["arquivo"])
+        self.assertTrue(dados["arquivo"].endswith("Dezorzi.NFS-e.exe"),
+                        dados["arquivo"])
 
     def test_sha_que_nao_bate_derruba_a_publicacao(self):
         # Melhor falhar aqui do que toda máquina recusar a atualização depois.
