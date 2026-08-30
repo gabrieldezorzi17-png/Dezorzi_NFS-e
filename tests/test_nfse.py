@@ -5202,3 +5202,65 @@ class AtenuacaoTests(unittest.TestCase):
         self.assertGreater(ui.Segmentado.DURACAO, 0)
         self.assertLessEqual(ui.Segmentado.DURACAO, 400,
                              "animação longa demais atrapalha quem trabalha")
+
+
+class GravacaoTeimosaTests(unittest.TestCase):
+    """Gravar preferência não pode falhar porque o antivírus estava olhando.
+
+    No Windows, o Defender e o indexador abrem o arquivo assim que ele é
+    escrito, e nessa janela de milissegundos o `replace` falha com
+    PermissionError. Uma tentativa só bastava aqui e quebrou na nuvem — na
+    máquina de quem usa, seria a preferência que some de vez em quando.
+    """
+
+    def setUp(self):
+        self.original = paths.ENV_FILE
+        self.pasta = pathlib.Path(tempfile.mkdtemp()).resolve()
+        paths.ENV_FILE = self.pasta / ".env"
+
+    def tearDown(self):
+        paths.ENV_FILE = self.original
+
+    def test_insiste_e_consegue(self):
+        """Falhando as primeiras vezes, ainda assim grava."""
+        paths.ENV_FILE.write_text("NFSE_TEMA=claro\n", encoding="utf-8")
+        original = pathlib.Path.replace
+        tentativas = {"n": 0}
+
+        def teimoso(self, alvo):
+            tentativas["n"] += 1
+            if tentativas["n"] <= 3:
+                raise PermissionError(13, "o antivírus estava com o arquivo")
+            return original(self, alvo)
+
+        with unittest.mock.patch.object(pathlib.Path, "replace", teimoso):
+            config.definir_no_env("NFSE_TEMA", "escuro")
+
+        self.assertGreater(tentativas["n"], 3, "não tentou de novo")
+        self.assertIn("NFSE_TEMA=escuro",
+                      paths.ENV_FILE.read_text(encoding="utf-8"))
+
+    def test_desistindo_nao_deixa_arquivo_solto(self):
+        """Se não der mesmo, o temporário não fica largado na pasta."""
+        paths.ENV_FILE.write_text("NFSE_TEMA=claro\n", encoding="utf-8")
+
+        def sempre_falha(self, alvo):
+            raise PermissionError(13, "preso o tempo todo")
+
+        with unittest.mock.patch.object(pathlib.Path, "replace", sempre_falha):
+            with self.assertRaises(PermissionError):
+                config.definir_no_env("NFSE_TEMA", "escuro")
+
+        sobrando = [p.name for p in self.pasta.iterdir() if p.name != ".env"]
+        self.assertEqual(sobrando, [], f"sobrou lixo: {sobrando}")
+        # E o arquivo antigo continua íntegro: melhor a preferência velha que
+        # nenhuma configuração.
+        self.assertIn("NFSE_TEMA=claro",
+                      paths.ENV_FILE.read_text(encoding="utf-8"))
+
+    def test_no_caminho_normal_grava_de_primeira(self):
+        paths.ENV_FILE.write_text("NFSE_TEMA=claro\n", encoding="utf-8")
+        config.definir_no_env("NFSE_TEMA", "escuro")
+        self.assertIn("NFSE_TEMA=escuro",
+                      paths.ENV_FILE.read_text(encoding="utf-8"))
+        self.assertFalse((self.pasta / ".env.env.tmp").exists())

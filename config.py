@@ -302,7 +302,33 @@ def definir_no_env(chave: str, valor: str) -> None:
 
     temporario = paths.ENV_FILE.with_suffix(".env.tmp")
     temporario.write_text("\n".join(linhas) + "\n", encoding="utf-8")
-    temporario.replace(paths.ENV_FILE)
+    _trocar_insistindo(temporario, paths.ENV_FILE)
+
+
+def _trocar_insistindo(temporario, alvo, tentativas: int = 12) -> None:
+    """Põe o arquivo novo no lugar do antigo, insistindo por um instante.
+
+    No Windows, o antivírus e o indexador abrem o arquivo assim que ele é
+    gravado, e enquanto estiverem com ele na mão o `replace` falha com
+    PermissionError. Não é falta de permissão de verdade: é uma janela de
+    alguns milissegundos, e tentar de novo resolve.
+
+    Uma tentativa só bastava na máquina de quem desenvolve, e quebrou na
+    compilação na nuvem — onde o Defender está sempre ligado. Na máquina de
+    quem usa, seria a preferência que não salva de vez em quando, sem
+    explicação nenhuma.
+    """
+    import time
+
+    for tentativa in range(tentativas):
+        try:
+            temporario.replace(alvo)
+            return
+        except PermissionError:
+            if tentativa == tentativas - 1:
+                temporario.unlink(missing_ok=True)
+                raise
+            time.sleep(0.05 * (tentativa + 1))
 
 
 def definir_live_mode(ativo: bool) -> None:
